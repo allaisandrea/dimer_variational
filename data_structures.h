@@ -4,10 +4,12 @@
 template <class type>
 struct data_structures
 {
+	unsigned int L;
 	unsigned int Nf;
-	arma::umat FE;
-	arma::umat AF;
-	arma::uvec P;
+	unsigned int n_faces;
+	arma::umat face_edges;
+	arma::umat adjacent_faces;
+	arma::uvec particles;
 	arma::Mat<type> psi;
 	arma::Vec<type> phi;
 	arma::mat w;
