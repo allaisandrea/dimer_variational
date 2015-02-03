@@ -16,17 +16,21 @@ void build_graph(unsigned int L, data_structures<type> &ds)
 		i3 = x + L * ((y + 1) % L);
 		i4 = (x + L - 1) % L + L * y;
 		i5 = x + L * ((y + L - 1) % L);
-		face_edges(0, i1) = 2 * i1;
-		face_edges(1, i1) = 2 * i2 + 1;
-		face_edges(2, i1) = 2 * i3;
-		face_edges(3, i1) = 2 * i1 + 1;
-		adjacent_faces(0, i1) = i2;
-		adjacent_faces(1, i1) = i3;
-		adjacent_faces(2, i1) = i4;
-		adjacent_faces(3, i1) = i5;
+		ds.face_edges(0, i1) = 2 * i1;
+		ds.face_edges(1, i1) = 2 * i2 + 1;
+		ds.face_edges(2, i1) = 2 * i3;
+		ds.face_edges(3, i1) = 2 * i1 + 1;
+		ds.adjacent_faces(0, i1) = i2;
+		ds.adjacent_faces(1, i1) = i3;
+		ds.adjacent_faces(2, i1) = i4;
+		ds.adjacent_faces(3, i1) = i5;
 	}
 }
 
+template
+void build_graph<double>(unsigned int L, data_structures<double> &ds);
+template
+void build_graph<arma::cx_double>(unsigned int L, data_structures<arma::cx_double> &ds);
 
 
 
