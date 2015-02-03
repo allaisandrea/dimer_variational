@@ -14,7 +14,7 @@ struct data_structures
 	arma::uvec particles;
 	arma::Mat<type> psi;
 	arma::Col<type> phi;
-	arma::mat w;
+	arma::vec w;
 	arma::uvec J;
 	arma::Mat<type> Mu; 
 	arma::Mat<type> Md; 

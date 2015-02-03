@@ -8,6 +8,7 @@ void homogeneous_state(
 	double t1, 
 	double t2, 
 	double t3, 
+	double t4, 
 	data_structures<type> &ds);
 
 #endif

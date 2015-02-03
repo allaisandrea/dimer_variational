@@ -1,9 +1,12 @@
+#include "states.h"
+#include "rng.h"
 template<class type>
 void homogeneous_state(
 	double dmu, 
 	double t1, 
 	double t2, 
 	double t3, 
+	double t4,
 	data_structures<type> &ds)
 {
 	unsigned int x, y, L, i00, i01, i10, i11, i20, i02, i, Pi;
@@ -14,11 +17,11 @@ void homogeneous_state(
 	for(y = 0; y < L; y++)
 	{
 		i00 = 2 * (x + L * y);
-		i10 = (x + 1) % L + L * y;
-		i01 = x + L * ((y + 1) % L);
-		i11 = (x + 1) % L + L * ((y + 1) % L);
-		i20 = (x + 2) % L + L * y;
-		i02 = x + L * ((y + 2) % L);
+		i10 = 2 * ((x + 1) % L + L * y);
+		i01 = 2 * (x + L * ((y + 1) % L));
+		i11 = 2 * ((x + 1) % L + L * ((y + 1) % L));
+		i20 = 2 * ((x + 2) % L + L * y);
+		i02 = 2 * (x + L * ((y + 2) % L));
 		
 		H(i00, i00) = 0.25 * dmu;
 		H(i00 + 1, i00 + 1) = -0.25 * dmu;
@@ -39,8 +42,13 @@ void homogeneous_state(
 		H(i00 + 1, i11) = -t3;
 		H(i00, i20 + 1) = -t3;
 		H(i01, i20 + 1) = -t3;
+		
+		H(i00, i10) = - t4;
+		H(i00 + 1, i01 + 1) = - t4;
 	}
+
 	H += trans(H);
+	H.save("H.bin");
 	
 	Px.zeros(2 * L * L, 2 * L * L);
 	Py.zeros(2 * L * L, 2 * L * L);
@@ -62,10 +70,10 @@ void homogeneous_state(
 		Py(i, Pi) = Py(Pi, i) = 1;
 	}
 	
-	arma::eig_sym(H + rng::randn() * Px + rng::randn() * Py, ds.w, psi);
+	arma::eig_sym(ds.w, psi, H + rng::gaussian() * Px + rng::gaussian() * Py);
 	
 	for(i = 0; i < 2 * L * L; i++)
-		ds.w(i) = trans(psi.col(i)) * H * psi.col(i);
+		ds.w(i) = arma::dot(psi.col(i), H * psi.col(i));
 	
 	ds.psi = arma::conv_to<arma::Mat<type> >::from(psi);
 	
@@ -79,6 +87,7 @@ void homogeneous_state<double>(
 	double t1, 
 	double t2, 
 	double t3, 
+	double t4, 
 	data_structures<double> &ds);
 
 template
@@ -86,5 +95,6 @@ void homogeneous_state<arma::cx_double>(
 	double dmu, 
 	double t1, 
 	double t2, 
-	double t3, 
+	double t3,
+	double t4, 
 	data_structures<arma::cx_double> &ds);
