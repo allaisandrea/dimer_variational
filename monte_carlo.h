@@ -7,9 +7,9 @@ template<class type>
 void initial_configuration(unsigned int Nf, data_structures<type> &ds);
 
 template <class type>
-void rotate_face(
+unsigned int rotate_face(
 	unsigned int f, 
-	bool clockwise, 
+	unsigned int clockwise, 
 	bool step,
 	data_structures<type> &ds);
 #endif

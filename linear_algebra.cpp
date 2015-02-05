@@ -1,3 +1,11 @@
+#include "linear_algebra.h"
+extern "C"{
+	void dgeqp3_(int*, int*, double*, int* m, int*, double*, double*, int*, int*);
+	void dorgqr_(int *, int*, int*, double*, int*, double*, double*, int*, int*);
+	void zgeqp3_(int*, int*, double*, int* m, int*, double*, double*, int*, double*, int*);
+	void zungqr_(int *, int*, int*, double*, int*, double*, double*, int*, int*);
+}
+
 void pivoting_qr_decomposition(arma::mat &A, arma::mat &Q, arma::uvec &perm)
 {
 	int i, j, m, n, lda, lwork, ltau, info,  tmp;
@@ -15,14 +23,14 @@ void pivoting_qr_decomposition(arma::mat &A, arma::mat &Q, arma::uvec &perm)
 	
 	lwork = -1;
 	dgeqp3_(&m, &n, A.memptr(), &m, jpvt.memptr(), tau.memptr(), &buf, &lwork, &info);
-	if(info != 0) std::cout << "QR decomposition failed" << "\n";
+	if(info != 0) throw "QR decomposition failed";
 	
 	lwork = buf;
 	if(lwork > work.n_elem)
 		work.set_size(lwork);
 
 	dgeqp3_(&m, &n, A.memptr(), &m, jpvt.memptr(), tau.memptr(), work.memptr(), &lwork, &info);
-	if(info != 0) std::cout << "QR decomposition failed" << "\n";
+	if(info != 0) throw "QR decomposition failed";
 	
 	perm.set_size(n);
 	for(i = 0; i < n; i++)
@@ -37,34 +45,36 @@ void pivoting_qr_decomposition(arma::mat &A, arma::mat &Q, arma::uvec &perm)
 	}
 	
 	dorgqr_(&m, &m, &ltau, Q.memptr(), &m, tau.memptr(), work.memptr(), &lwork, &info);
-	if(info != 0) std::cout << "Unitary Q reconstruction failed" << "\n";
+	if(info != 0) throw "Unitary Q reconstruction failed";
 }
 
 void pivoting_qr_decomposition(arma::cx_mat &A, arma::cx_mat &Q, arma::uvec &perm)
 {
 	int i, j, m, n, lda, lwork, ltau, info,  tmp;
 	double buf;
-	static arma::vec work, tau;
+	static arma::vec work, rwork, tau;
 	static arma::ivec jpvt;
 	m = A.n_rows;
 	n = A.n_cols;
 	ltau = n < m ? n : m;
 	jpvt.zeros(n);
 	tau.set_size(2 * ltau);
-	
+	rwork.set_size(2 * n);
 	for(i = 0; i < n; i++)
 		jpvt[i] = 0;
 	
 	lwork = -1;
-	dgeqp3_(&m, &n, (double*)A.memptr(), &m, jpvt.memptr(), tau.memptr(), &buf, &lwork, &info);
-	if(info != 0) std::cout << "QR decomposition failed" << "\n";
+	if(work.n_elem < 2 * (n + 1))
+		work.set_size(2 * (n + 1));
+	zgeqp3_(&m, &n, (double*)A.memptr(), &m, jpvt.memptr(), tau.memptr(), work.memptr(), &lwork, rwork.memptr(), &info);
+	if(info != 0) throw "QR decomposition failed";
 	
-	lwork = 2 * buf;
+	lwork = 2 * work(0);
 	if(lwork > work.n_elem)
 		work.set_size(lwork);
 
-	dgeqp3_(&m, &n, (double*)A.memptr(), &m, jpvt.memptr(), tau.memptr(), work.memptr(), &lwork, &info);
-	if(info != 0) std::cout << "QR decomposition failed" << "\n";
+	zgeqp3_(&m, &n, (double*)A.memptr(), &m, jpvt.memptr(), tau.memptr(), work.memptr(), &lwork, rwork.memptr(), &info);
+	if(info != 0) throw "QR decomposition failed";
 	
 	perm.set_size(n);
 	for(i = 0; i < n; i++)
@@ -78,20 +88,22 @@ void pivoting_qr_decomposition(arma::cx_mat &A, arma::cx_mat &Q, arma::uvec &per
 		A[i + m * j] = 0.;
 	}
 	
-	dorgqr_(&m, &m, &ltau, (double*)Q.memptr(), &m, tau.memptr(), work.memptr(), &lwork, &info);
-	if(info != 0) std::cout << "Unitary Q reconstruction failed" << "\n";
+	zungqr_(&m, &m, &ltau, (double*)Q.memptr(), &m, tau.memptr(), work.memptr(), &lwork, &info);
+	if(info != 0) throw "Unitary Q reconstruction failed";
 }
 
 template<class type>
 bool singular(const arma::Mat<type> &M)
 {
-	arma::mat Q, R;
+	arma::Mat<type> Q, R;
+	arma::vec s;
 	arma::uvec perm;
 	double max, min;
 	R = M;
 	pivoting_qr_decomposition(R, Q, perm);
-	max = arma::max(abs(R.diag()));
-	min = arma::min(abs(R.diag()));
+	s = abs(R.diag());
+	max = arma::max(s);
+	min = arma::min(s);
 	if(min == 0. || max / min > 1.e7)
 		return true;
 	return false;

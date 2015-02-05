@@ -48,7 +48,6 @@ void homogeneous_state(
 	}
 
 	H += trans(H);
-	H.save("H.bin");
 	
 	Px.zeros(2 * L * L, 2 * L * L);
 	Py.zeros(2 * L * L, 2 * L * L);
@@ -72,6 +71,10 @@ void homogeneous_state(
 	
 	arma::eig_sym(ds.w, psi, H + rng::gaussian() * Px + rng::gaussian() * Py);
 	
+	for(i = 0; i + 1 < ds.w.n_elem; i++)
+		if(fabs(ds.w(i) - ds.w(i + 1)) < 1.e-8)
+			throw "Degeneracy has not been fully lifted";
+		
 	for(i = 0; i < 2 * L * L; i++)
 		ds.w(i) = arma::dot(psi.col(i), H * psi.col(i));
 	

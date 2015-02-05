@@ -18,6 +18,17 @@ public:
 		return gsl_rng_uniform_int(r, n);
 	}
 	
+	static arma::uvec uniform_integer(unsigned int n, unsigned int m)
+	{
+		unsigned int i;
+		arma::uvec v(m);
+		for(i = 0; i < v.n_elem; i++)
+		{
+			v[i] = gsl_rng_uniform_int(r, n);
+		}
+		return v;
+	}
+	
 	static double uniform()
 	{
 		return gsl_rng_uniform(r);
