@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       157,          7]
-NotebookDataLength[     25911,        678]
-NotebookOptionsPosition[     25053,        646]
-NotebookOutlinePosition[     25389,        661]
-CellTagsIndexPosition[     25346,        658]
+NotebookDataLength[     27884,        737]
+NotebookOptionsPosition[     26837,        698]
+NotebookOutlinePosition[     27173,        713]
+CellTagsIndexPosition[     27130,        710]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -642,6 +642,58 @@ Cell[BoxData[{
  CellChangeTimes->{{3.632069907971589*^9, 3.6320702297981462`*^9}, {
   3.632070532228323*^9, 3.632070655044599*^9}, {3.6320707277717*^9, 
   3.632070767120929*^9}, {3.63207104183549*^9, 3.63207107339585*^9}}]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Swap states", "Section",
+ CellChangeTimes->{{3.633890019766602*^9, 3.6338900223079233`*^9}}],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"SetDirectory", "[", 
+   RowBox[{"NotebookDirectory", "[", "]"}], "]"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"<<", "ArmaBinary`"}], "\[IndentingNewLine]", 
+  RowBox[{"(*", 
+   RowBox[{
+    RowBox[{"Run", "[", "\"\<./run\>\"", "]"}], ";"}], 
+   "*)"}]}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"tally", "=", 
+   RowBox[{"ImportArmaBinary", "[", "\"\<tally.bin\>\"", "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{"ListPlot", "[", 
+  RowBox[{
+   RowBox[{"Sort", "[", "tally", "]"}], ",", 
+   RowBox[{"PlotRange", "\[Rule]", "All"}]}], "]"}]}], "Input",
+ CellChangeTimes->{3.63389003518495*^9}],
+
+Cell[BoxData[
+ GraphicsBox[{{}, 
+   {RGBColor[0.24720000000000014`, 0.24, 0.6], PointBox[CompressedData["
+1:eJxTTMoPSmViYGCwAWIQ3bvc36g+6pI9Awg05Dig8BPyUPkK+ah8BzR+Ahp/
+Qb7DPNOIdq7zzyH8CU2ofItmVP4DAnyFFlT+hxYHdlPLaeazX0D4Bs2o/BNo
+fAE09SvQ+AdaUfkfWh14yu9p7dT9COFHdKPyf/Sg8ht6UfkzCPBf9DpIc5+Y
+xnUQyr/Qg8qvQJOfgMbX6EPlH0Djc/Q7rNBuLt6z9TOEfwONP2MCKn8JGv8H
+Gl9iIio/ZKLDWfVPUfaFfyD8HdNQ+TOmo/KvoPFdZqDyY9D4PTMcDKy/uv5k
+Z3eApIdFqPx3aHy3xaj8MjT+JDT+icUO58zU3u8uEoLwV6xD5R9A4xutR+Vf
+QOOzb0Dli21w0P5a0/VBQBhuPgpfGU3eFY3vjsaPRONv2uAAAHQbKvg=
+     "]]}, {}},
+  AspectRatio->NCache[GoldenRatio^(-1), 0.6180339887498948],
+  Axes->True,
+  AxesLabel->{None, None},
+  AxesOrigin->{0.286773490077956, 228.},
+  Method->{},
+  PlotRangeClipping->True]], "Output",
+ CellChangeTimes->{
+  3.633890039979409*^9, 3.633890098176484*^9, 3.6338901779418507`*^9, 
+   3.633890280972844*^9, {3.633891580607765*^9, 3.633891588291081*^9}, 
+   3.633892120359475*^9, 3.6338922021218367`*^9}]
+}, Open  ]]
 }, Open  ]]
 },
 WindowSize->{1920, 1032},
@@ -679,6 +731,13 @@ Cell[20517, 523, 1593, 32, 121, "Input"],
 Cell[22113, 557, 92, 1, 32, "Input"],
 Cell[22208, 560, 476, 14, 32, "Input"],
 Cell[22687, 576, 2350, 67, 297, "Input"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[25074, 648, 98, 1, 81, "Section"],
+Cell[CellGroupData[{
+Cell[25197, 653, 654, 19, 121, "Input"],
+Cell[25854, 674, 955, 20, 236, "Output"]
+}, Open  ]]
 }, Open  ]]
 }
 ]

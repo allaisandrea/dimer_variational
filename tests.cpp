@@ -23,8 +23,8 @@ void test_homogeneous_state()
 	data_structures<arma::cx_double> ds;
 	build_graph(L, ds);
 	homogeneous_state(dmu, t1, t2, t3, t4, ds);
-	ds.psi.save("psi.bin"); 
-	ds.w.save("w.bin");
+	ds.psi_u.save("psi.bin"); 
+	ds.w_u.save("w.bin");
 }
 
 template<class type>
@@ -34,20 +34,20 @@ void test_M(const data_structures<type>& ds)
 	arma::uvec e;
 	arma::Mat<type> Mu, Md;
 	
-	Mu.set_size(ds.Nf, ds.Nf);
-	Md.set_size(ds.Nf, ds.Nf);
+	Mu.set_size(ds.Nu, ds.Nu);
+	Md.set_size(ds.Nd, ds.Nd);
 	for(i = 0; i < ds.particles.n_rows; i++)
 	{
 		p = ds.particles(i) - 2;
-		if(p < ds.Nf)
+		if(p < ds.Nu)
 		{
 			e << i;
-			Mu.row(p) = ds.psi(e, ds.J);
+			Mu.row(p) = ds.psi_u(e, ds.Ju);
 		}
-		else if(p < 2 * ds.Nf)
+		else if(p < ds.Nu + ds.Nd)
 		{
 			e << i;
-			Md.row(p - ds.Nf) = ds.psi(e, ds.J);
+			Md.row(p - ds.Nu) = ds.psi_d(e, ds.Jd);
 		}
 	}
 	
@@ -59,7 +59,7 @@ void test_M(const data_structures<type>& ds)
 void test_rotate_face_no_step()
 {
 	// Remember to disable the search for regular configuration.
-	unsigned int L = 6, Nf = 3, c;
+	unsigned int L = 6, Nu = 3, Nd = 2, c;
 	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05;
 	arma::umat p;
 	data_structures<double> ds;
@@ -70,7 +70,7 @@ void test_rotate_face_no_step()
 	c = 0;
 	p.set_size(ds.particles.n_rows, 0);
 	
-	initial_configuration(Nf, ds);
+	initial_configuration(Nu, Nd, ds);
 	p.resize(p.n_rows, p.n_cols + 1);
 	p.col(c++) = ds.particles;
 	
@@ -134,24 +134,24 @@ void test_Mi(const data_structures<type>& ds)
 	
 	std::cout << "test_Mi: ";
 	
-	A.eye(ds.Nf, ds.Nf);
+	A.eye(ds.Nu, ds.Nu);
 	A -= ds.Mu * ds.Mui;
 	std::cout << std::setw(10) << std::setprecision(3) << norm(A, "fro");
-	A.eye(ds.Nf, ds.Nf);
+	A.eye(ds.Nd, ds.Nd);
 	A -= ds.Md * ds.Mdi;
 	std::cout << std::setw(10) << std::setprecision(3) << norm(A, "fro") << "\n";
 }
 
 void test_rotate_face_with_step()
 {
-	unsigned int L = 10, Nf = 10, c;
+	unsigned int L = 10, Nu = 10, Nd = 10, c;
 	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05;
 	data_structures<double> ds;
 	
 	build_graph(L, ds);
 	homogeneous_state(dmu, t1, t2, t3, t4, ds);
 	
-	initial_configuration(Nf, ds);
+	initial_configuration(Nu, Nd, ds);
 	test_Mi(ds);
 	
 	for(c = 0; c < 91; c++)
@@ -218,7 +218,7 @@ double phi_amplitude(data_structures<type> ds)
 
 void test_correct_distribution()
 {
-	unsigned int L = 4, Nf = 3, c, i, n_measure = 100000000, n_skip = n_measure / 10, which_case;
+	unsigned int L = 4, Nu = 3, Nd = 2, c, i, n_measure = 10000000, n_skip = n_measure / 10, which_case;
 	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05;
 	double amp0, amp1;
 	arma::mat Mui, Mdi, X, p;
@@ -230,11 +230,12 @@ void test_correct_distribution()
 
 	build_graph(L, ds);
 	homogeneous_state(dmu, t1, t2, t3, t4, ds);
-	X.randn(ds.psi.n_rows, ds.psi.n_cols);
-	eig_sym(w, ds.psi, X);
+	X.randn(ds.psi_u.n_rows, ds.psi_u.n_cols);
+	eig_sym(w, ds.psi_u, X);
+	ds.psi_d = ds.psi_u;
  	ds.phi += 0.05 * rng::gaussian(ds.phi.n_elem);
 	
-	initial_configuration(Nf, ds);
+	initial_configuration(Nu, Nd, ds);
 	
 	for(c = 0; c < n_skip; c++)
 	{
@@ -284,4 +285,44 @@ void test_correct_distribution()
 		c++;
 	}
 	p.save("tally.bin");
+}
+
+void test_apriori_swap_proposal()
+{
+	unsigned int n = 5, no = 3, i, n_measure = 100000, io, ie;
+	double max_w;
+	arma::vec w;
+	arma::uvec Jo, Je;
+	arma::mat p;
+	
+	std::map<arma::uvec, my_pair, classcomp> map;
+	std::map<arma::uvec, my_pair, classcomp>::iterator it;
+	my_pair *pair;
+	
+	w.randn(n);
+	max_w = max(w);
+	Jo = arma::linspace<arma::uvec>(0, no - 1, no);
+	Je = arma::linspace<arma::uvec>(no, n - 1, n - no);
+	
+	for(i = 0; i < n_measure; i++)
+	{
+		if(apriori_swap_proposal(w, Jo, Je, io, ie))
+		{
+			swap(Jo(io), Je(ie));
+		}
+		pair = &map[Jo];
+		pair->value = exp(max_w - accu(w(Jo)));
+		pair->count ++;
+	}
+	
+	p.set_size(2, map.size());
+	i = 0;
+	for(it = map.begin(); it != map.end(); it++)
+	{
+		p(0, i) = (*it).second.value;
+		p(1, i) = (*it).second.count;
+		i++;
+	}
+	p.save("tally.bin");
+	
 }

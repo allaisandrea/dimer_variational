@@ -4,7 +4,7 @@
 #include "data_structures.h"
 
 template<class type>
-void initial_configuration(unsigned int Nf, data_structures<type> &ds);
+void initial_configuration(unsigned int Nu, unsigned int Nd, data_structures<type> &ds);
 
 template <class type>
 unsigned int rotate_face(
@@ -12,4 +12,6 @@ unsigned int rotate_face(
 	unsigned int clockwise, 
 	bool step,
 	data_structures<type> &ds);
+
+bool apriori_swap_proposal(const arma::vec& w, const arma::uvec &Jo, const arma::uvec &Je, unsigned int &io, unsigned int &ie);
 #endif
