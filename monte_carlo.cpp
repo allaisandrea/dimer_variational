@@ -47,12 +47,15 @@ void initial_configuration(unsigned int Nu, unsigned int Nd, data_structures<typ
 		ds.J[s].resize(ds.Nf[s]);
 	}
 	
+	ds.edge_of[0].set_size(Nu);
+	ds.edge_of[1].set_size(Nd);
 	for(c = 0; c < Nu + Nd; c++)
 	{
 		ds.particles(edges(c)) = c + 2;
 		e << edges(c);
 		c < Nu ? s = 0 : s = 1;
 		ds.M[s].row(c - s * Nu) = ds.psi[s](e, ds.J[s]);
+		ds.edge_of[s](c - s * Nu) = edges(c);
 	}
 	
 	for(c = Nu + Nd; c < edges.n_elem; c++)
@@ -230,6 +233,7 @@ unsigned int rotate_face_bf(
 		ds.particles(destination2) = ds.particles(origin2);
 		ds.particles(origin1) = 0;
 		ds.particles(origin2) = 0;
+		ds.edge_of[s](p) = destination2;
 		return 2;
 	}
 	return 0;
@@ -360,6 +364,8 @@ unsigned int rotate_face_ff(
 		ds.particles(destination2) = ds.particles(origin2);
 		ds.particles(origin1) = 0;
 		ds.particles(origin2) = 0;
+		ds.edge_of[s1](p1) = destination1;
+		ds.edge_of[s2](p2) = destination2;
 		return return_value;
 	}
 	return 0;
@@ -396,6 +402,10 @@ bool apriori_swap_proposal(const arma::vec& w, const arma::uvec &Jo, const arma:
 	return rng::uniform() < Zo1 * Ze1 / Zo2 / Ze2;	
 }
 
+// bool swap_states(unsigned int s, data_structures<type> & ds)
+// {
+// 	unsigned int io, ie;
+// }
 
 template
 void initial_configuration<double>(unsigned int Nu, unsigned int Nd, data_structures<double> &ds);

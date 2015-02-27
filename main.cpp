@@ -9,8 +9,8 @@ int main(int argc, char** argv)
 // 	test_homogeneous_state(); 
 // 	test_rotate_face_no_step();
 // 	test_singular();
-// 	test_rotate_face_with_step();
-	test_correct_distribution();
+	test_rotate_face_with_step();
+// 	test_correct_distribution();
 // 	test_apriori_swap_proposal();
 // 	test_map();
 // 	}

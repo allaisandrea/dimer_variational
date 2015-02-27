@@ -12,6 +12,7 @@ struct data_structures
 	arma::umat face_edges;
 	arma::umat adjacent_faces;
 	arma::uvec particles;
+	arma::uvec edge_of[2];
 	arma::Mat<type> psi[2];
 	arma::Col<type> phi;
 	arma::vec w[2];

@@ -142,6 +142,18 @@ void test_Mi(const data_structures<type>& ds)
 	std::cout << std::setw(10) << std::setprecision(3) << norm(A, "fro") << "\n";
 }
 
+template<class type>
+void test_edge_assignment(const data_structures<type>& ds)
+{
+	unsigned int i, s;
+	for(s = 0; s < 2; s++)
+	for(i = 0; i < ds.Nf[s]; i++)
+	{
+		if(ds.particles(ds.edge_of[s](i)) != 2 + i + s * ds.Nf[0])
+			std::cout << "test_edge_assignment error\n";
+	}
+}
+	
 void test_rotate_face_with_step()
 {
 	unsigned int L = 10, Nu = 10, Nd = 10, c;
@@ -154,11 +166,12 @@ void test_rotate_face_with_step()
 	initial_configuration(Nu, Nd, ds);
 	test_Mi(ds);
 	
-	for(c = 0; c < 91; c++)
+	for(c = 0; c < 100; c++)
 	{
 		while(rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), true, amp, ds) < 2);
 		test_M(ds);
 		test_Mi(ds);
+		test_edge_assignment(ds);
 	}
 }
 
