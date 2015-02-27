@@ -265,8 +265,6 @@ void test_correct_distribution()
 	Mi[1] = ds.Mi[1];
 	
 	
-	
-	p.set_size(n_measure, 1);
 	for(c = 0; c < n_measure; c++)
 	{
 	
@@ -295,8 +293,6 @@ void test_correct_distribution()
 		
 	}
 	std::cout << "\n";
-	
-	p.save("p.bin");
 	
 	p.set_size(2, map.size());
 	c = 0;
@@ -347,4 +343,111 @@ void test_apriori_swap_proposal()
 	}
 	p.save("tally.bin");
 	
+}
+
+void my_print(const arma::uvec &v)
+{
+	unsigned int i;
+	for(i = 0; i < v.n_elem; i++)
+		std::cout << std::setw(3) << v(i);
+	std::cout << "\n";
+}
+
+template<class type>
+double energy(data_structures<type> &ds)
+{
+	double E;
+	unsigned int i, s;
+	E = 0;
+	for(s = 0; s < 2; s++)
+	for(i = 0; i < ds.J[s].n_elem; i++)
+		E += ds.w[s](ds.J[s](i));
+	return E;
+}
+
+void test_swap_states()
+{
+	unsigned int L = 4, Nu = 3, Nd = 2, c, i, n_measure = 1<<20, n_skip = n_measure / 16, which_case, s;
+	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05;
+	double amp0, amp1, amp2, E0;
+	arma::mat Mi[2], X, p;
+	arma::vec w;
+	arma::uvec JK0[2], JK1[2];
+	data_structures<double> ds;
+	std::map<arma::uvec, my_pair, classcomp> map;
+	std::map<arma::uvec, my_pair, classcomp>::iterator it;
+	my_pair *pair;
+
+	build_graph(L, ds);
+	homogeneous_state(dmu, t1, t2, t3, t4, ds);
+	X.randn(ds.psi[0].n_rows, ds.psi[0].n_cols);
+	eig_sym(w, ds.psi[0], X);
+	ds.psi[1] = ds.psi[0];
+ 	ds.phi += 0.05 * rng::gaussian(ds.phi.n_elem);
+	
+	initial_configuration(Nu, Nd, ds); 
+	
+	for(c = 0; c < n_skip; c++)
+	{
+		swap_states(rng::uniform_integer(2), amp2, ds);
+		if((c + 1) % (n_skip / 128) == 0)
+		{
+			std::cout << "\r" << std::setw(5) << 100 * (c + 1) / n_skip << " %";
+			std::cout.flush();
+		}
+	}
+	std::cout << "\n";
+	
+	Mi[0] = ds.Mi[0];
+	Mi[1] = ds.Mi[1];
+	E0 = energy(ds);
+	classcomp my_less;
+	for(c = 0; c < n_measure; c++)
+	{
+		s = rng::uniform_integer(2);
+		JK0[0] = arma::join_vert(ds.J[0], ds.K[0]);
+		JK0[1] = arma::join_vert(ds.J[1], ds.K[1]);
+		amp0 = phi_amplitude(ds) * abs_squared(arma::det(Mi[0] * ds.M[0]) * arma::det(Mi[1] * ds.M[1]));
+		which_case = swap_states(s, amp2, ds);
+		JK1[0] = arma::join_vert(ds.J[0], ds.K[0]);
+		JK1[1] = arma::join_vert(ds.J[1], ds.K[1]);
+		amp1 = phi_amplitude(ds) * abs_squared(arma::det(Mi[0] * ds.M[0]) * arma::det(Mi[1] * ds.M[1]));
+		if(which_case != 0 && fabs(amp1/amp0/amp2 - 1.) > 1.e-7)
+		{
+			test_M(ds);
+			test_Mi(ds);
+			std::cout << s << std::setw(12) << amp1 / amp0 / amp2 - 1. << "\n";
+			my_print(JK0[s]);
+			my_print(JK1[s]);
+			std::cout << "\n";
+		}
+		
+		if(which_case == 0 && fabs(amp1/amp0 - 1.) > 1.e-7)
+			std::cout << "err: amp\n";
+		
+		pair = &map[arma::join_vert(ds.J[0], ds.J[1])];
+		amp1 *= exp(E0-energy(ds));
+		if(pair->value != 0. && fabs(pair->value - amp1) > 1.e-7)
+			std::cout << "err:map\n";
+		pair->value = amp1;
+		pair->count ++;
+		
+		if((c + 1) % (n_measure / 128) == 0)
+		{
+			std::cout << "\r" << std::setw(5) << 100 * (c + 1) / n_measure << " %";
+			std::cout.flush();
+		}
+		
+	}
+	std::cout << "\n";
+	
+	p.set_size(2, map.size());
+	c = 0;
+	for(it = map.begin(); it != map.end(); it++)
+	{
+		p(0, c) = (*it).second.value;
+		p(1, c) = (*it).second.count;
+		c++;
+	}
+	p.save("tally.bin");
 }

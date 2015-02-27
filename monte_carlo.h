@@ -15,4 +15,8 @@ unsigned int rotate_face(
 	data_structures<type> &ds);
 
 bool apriori_swap_proposal(const arma::vec& w, const arma::uvec &Jo, const arma::uvec &Je, unsigned int &io, unsigned int &ie);
+template <class type>
+bool swap_states(unsigned int s, double& amp, data_structures<type> & ds);
+
+
 #endif

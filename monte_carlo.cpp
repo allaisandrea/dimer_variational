@@ -189,8 +189,9 @@ unsigned int rotate_face_bf(
 #endif
 	bool accept = false;
 	unsigned int p, s;
-
+	
 	type det;
+	arma::uvec e;
 	arma::Col<type> U;
 	arma::Row<type> V;
 	
@@ -207,8 +208,10 @@ unsigned int rotate_face_bf(
 		s = 1;
 	}
 	
-	V = ds.psi[s](destination2 * arma::ones<arma::uvec>(1), ds.J[s]);
-	V -= ds.psi[s](origin2 * arma::ones<arma::uvec>(1), ds.J[s]);
+	e << destination2;
+	V = ds.psi[s](e, ds.J[s]);
+	e << origin2;
+	V -= ds.psi[s](e, ds.J[s]);
 	
 	if(step)
 	{
@@ -402,10 +405,42 @@ bool apriori_swap_proposal(const arma::vec& w, const arma::uvec &Jo, const arma:
 	return rng::uniform() < Zo1 * Ze1 / Zo2 / Ze2;	
 }
 
-// bool swap_states(unsigned int s, data_structures<type> & ds)
-// {
-// 	unsigned int io, ie;
-// }
+template <class type>
+bool swap_states(unsigned int s, double& amp, data_structures<type> & ds)
+{
+	unsigned int io, ie;
+	type det;
+	arma::uvec e;
+	arma::Col<type> U;
+	arma::Row<type> V;
+	
+	if(apriori_swap_proposal(ds.w[s], ds.J[s], ds.K[s], io, ie))
+	{
+		
+		
+		e << ds.K[s](ie);
+		U = ds.psi[s](ds.edge_of[s], e);
+		
+		e << ds.J[s](io);
+		U -= ds.psi[s](ds.edge_of[s], e);
+		
+		V.zeros(ds.Nf[s]);
+		V(io) = 1.;
+		V = V * ds.Mi[s];
+		
+		det = 1. + dot(V, U);
+		amp = abs_squared(det);
+		if(amp > rng::uniform())
+		{
+			ds.M[s].col(io) += U;
+			ds.Mi[s] -= (ds.Mi[s] * U * V) / det;
+			swap(ds.J[s](io), ds.K[s](ie));
+			return true;
+		}
+	}
+	
+	return false;
+}
 
 template
 void initial_configuration<double>(unsigned int Nu, unsigned int Nd, data_structures<double> &ds);
@@ -428,3 +463,9 @@ unsigned int rotate_face<arma::cx_double>(
 	bool step,
 	double &amp,
 	data_structures<arma::cx_double> &ds);
+
+template 
+bool swap_states<double>(unsigned int s, double& amp, data_structures<double> & ds);
+
+template 
+bool swap_states<arma::cx_double>(unsigned int s, double& amp, data_structures<arma::cx_double> & ds);
