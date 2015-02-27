@@ -23,8 +23,8 @@ void test_homogeneous_state()
 	data_structures<arma::cx_double> ds;
 	build_graph(L, ds);
 	homogeneous_state(dmu, t1, t2, t3, t4, ds);
-	ds.psi_u.save("psi.bin"); 
-	ds.w_u.save("w.bin");
+	ds.psi[0].save("psi.bin"); 
+	ds.w[0].save("w.bin");
 }
 
 template<class type>
@@ -32,35 +32,35 @@ void test_M(const data_structures<type>& ds)
 {
 	unsigned int i, p;
 	arma::uvec e;
-	arma::Mat<type> Mu, Md;
+	arma::Mat<type> M[2];
 	
-	Mu.set_size(ds.Nu, ds.Nu);
-	Md.set_size(ds.Nd, ds.Nd);
+	M[0].set_size(ds.Nf[0], ds.Nf[0]);
+	M[1].set_size(ds.Nf[1], ds.Nf[1]);
 	for(i = 0; i < ds.particles.n_rows; i++)
 	{
 		p = ds.particles(i) - 2;
-		if(p < ds.Nu)
+		if(p < ds.Nf[0])
 		{
 			e << i;
-			Mu.row(p) = ds.psi_u(e, ds.Ju);
+			M[0].row(p) = ds.psi[0](e, ds.J[0]);
 		}
-		else if(p < ds.Nu + ds.Nd)
+		else if(p < ds.Nf[0] + ds.Nf[1])
 		{
 			e << i;
-			Md.row(p - ds.Nu) = ds.psi_d(e, ds.Jd);
+			M[1].row(p - ds.Nf[0]) = ds.psi[1](e, ds.J[1]);
 		}
 	}
 	
 	std::cout << "test_M:  ";
-	std::cout << std::setw(10) << std::setprecision(3) << norm(Mu - ds.Mu, "fro");
-	std::cout << std::setw(10) << std::setprecision(3) << norm(Md - ds.Md, "fro") << "\n";
+	std::cout << std::setw(10) << std::setprecision(3) << norm(M[0] - ds.M[0], "fro");
+	std::cout << std::setw(10) << std::setprecision(3) << norm(M[1] - ds.M[1], "fro") << "\n";
 }
 
 void test_rotate_face_no_step()
 {
 	// Remember to disable the search for regular configuration.
 	unsigned int L = 6, Nu = 3, Nd = 2, c;
-	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05;
+	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05, dummy;
 	arma::umat p;
 	data_structures<double> ds;
 	
@@ -74,31 +74,31 @@ void test_rotate_face_no_step()
 	p.resize(p.n_rows, p.n_cols + 1);
 	p.col(c++) = ds.particles;
 	
-	std::cout << rotate_face(30, true, false, ds) << "\n";
+	std::cout << rotate_face(30, true, false, dummy, ds) << "\n";
 	p.resize(p.n_rows, p.n_cols + 1);
 	p.col(c++) = ds.particles;
 	
-	std::cout << rotate_face( 6, true, false, ds) << "\n";
+	std::cout << rotate_face( 6, true, false, dummy, ds) << "\n";
 	p.resize(p.n_rows, p.n_cols + 1);
 	p.col(c++) = ds.particles;
 	
-	std::cout << rotate_face( 8, true, false, ds) << "\n";
+	std::cout << rotate_face( 8, true, false, dummy, ds) << "\n";
 	p.resize(p.n_rows, p.n_cols + 1);
 	p.col(c++) = ds.particles;
 	
-	std::cout << rotate_face( 7, true, false, ds) << "\n";
+	std::cout << rotate_face( 7, true, false, dummy, ds) << "\n";
 	p.resize(p.n_rows, p.n_cols + 1);
 	p.col(c++) = ds.particles;
 	
-	std::cout << rotate_face(20, false, false, ds) << "\n";
+	std::cout << rotate_face(20, false, false, dummy, ds) << "\n";
 	p.resize(p.n_rows, p.n_cols + 1);
 	p.col(c++) = ds.particles;
 	
-	std::cout << rotate_face(10, true, false, ds) << "\n";
+	std::cout << rotate_face(10, true, false, dummy, ds) << "\n";
 	p.resize(p.n_rows, p.n_cols + 1);
 	p.col(c++) = ds.particles;
 	
-	std::cout << rotate_face(22, false, false, ds) << "\n";
+	std::cout << rotate_face(22, false, false, dummy, ds) << "\n";
 	p.resize(p.n_rows, p.n_cols + 1);
 	p.col(c++) = ds.particles;
 	
@@ -107,7 +107,7 @@ void test_rotate_face_no_step()
 	
 	for(c = 0; c < 100; c++)
 	{
-		if(rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), false, ds))
+		if(rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), false, dummy, ds))
 			test_M(ds);
 	}
 }
@@ -134,18 +134,18 @@ void test_Mi(const data_structures<type>& ds)
 	
 	std::cout << "test_Mi: ";
 	
-	A.eye(ds.Nu, ds.Nu);
-	A -= ds.Mu * ds.Mui;
+	A.eye(ds.Nf[0], ds.Nf[0]);
+	A -= ds.M[0] * ds.Mi[0];
 	std::cout << std::setw(10) << std::setprecision(3) << norm(A, "fro");
-	A.eye(ds.Nd, ds.Nd);
-	A -= ds.Md * ds.Mdi;
+	A.eye(ds.Nf[1], ds.Nf[1]);
+	A -= ds.M[1] * ds.Mi[1];
 	std::cout << std::setw(10) << std::setprecision(3) << norm(A, "fro") << "\n";
 }
 
 void test_rotate_face_with_step()
 {
 	unsigned int L = 10, Nu = 10, Nd = 10, c;
-	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05;
+	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05, amp;
 	data_structures<double> ds;
 	
 	build_graph(L, ds);
@@ -156,7 +156,7 @@ void test_rotate_face_with_step()
 	
 	for(c = 0; c < 91; c++)
 	{
-		while(rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), true, ds) < 2);
+		while(rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), true, amp, ds) < 2);
 		test_M(ds);
 		test_Mi(ds);
 	}
@@ -218,10 +218,10 @@ double phi_amplitude(data_structures<type> ds)
 
 void test_correct_distribution()
 {
-	unsigned int L = 4, Nu = 3, Nd = 2, c, i, n_measure = 10000000, n_skip = n_measure / 10, which_case;
+	unsigned int L = 4, Nu = 3, Nd = 2, c, i, n_measure = 1<<25, n_skip = n_measure / 16, which_case;
 	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05;
-	double amp0, amp1;
-	arma::mat Mui, Mdi, X, p;
+	double amp0, amp1, amp2;
+	arma::mat Mi[2], X, p;
 	arma::vec w;
 	data_structures<double> ds;
 	std::map<arma::uvec, my_pair, classcomp> map;
@@ -230,49 +230,58 @@ void test_correct_distribution()
 
 	build_graph(L, ds);
 	homogeneous_state(dmu, t1, t2, t3, t4, ds);
-	X.randn(ds.psi_u.n_rows, ds.psi_u.n_cols);
-	eig_sym(w, ds.psi_u, X);
-	ds.psi_d = ds.psi_u;
+	X.randn(ds.psi[0].n_rows, ds.psi[0].n_cols);
+	eig_sym(w, ds.psi[0], X);
+	ds.psi[1] = ds.psi[0];
  	ds.phi += 0.05 * rng::gaussian(ds.phi.n_elem);
 	
 	initial_configuration(Nu, Nd, ds);
 	
 	for(c = 0; c < n_skip; c++)
 	{
-		rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), true, ds);
-		if(c % 100 == 0)
-			std::cout << "\r" << 100. * (c + 1) / n_skip;
+		rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), true, amp2, ds);
+		if((c + 1) % (n_skip / 128) == 0)
+		{
+			std::cout << "\r" << std::setw(5) << 100 * (c + 1) / n_skip << " %";
+			std::cout.flush();
+		}
 	}
-	Mui = ds.Mui;
-	Mdi = ds.Mdi;
-	
 	std::cout << "\n";
+	
+	Mi[0] = ds.Mi[0];
+	Mi[1] = ds.Mi[1];
+	
+	
 	
 	p.set_size(n_measure, 1);
 	for(c = 0; c < n_measure; c++)
 	{
 	
-// 		amp0 = phi_amplitude(ds) * abs_squared(arma::det(Mui * ds.Mu) * arma::det(Mdi * ds.Md));
-		which_case = rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), true, ds);
-		amp1 = phi_amplitude(ds) * abs_squared(arma::det(Mui * ds.Mu) * arma::det(Mdi * ds.Md));
-// 		if(which_case != 0)
-// 		{
-// 			std::cout << std::setw(12) << amp1 / amp0 << " " << which_case << "\n";
-// 			test_Mi(ds);
-// 		}
-// 		if(which_case == 0 && fabs(amp1/amp0 - 1.) > 1.e-7)
-// 			std::cout << "err: amp\n";
+		amp0 = phi_amplitude(ds) * abs_squared(arma::det(Mi[0] * ds.M[0]) * arma::det(Mi[1] * ds.M[1]));
+		which_case = rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), true, amp2, ds);
+		amp1 = phi_amplitude(ds) * abs_squared(arma::det(Mi[0] * ds.M[0]) * arma::det(Mi[1] * ds.M[1]));
+		if(which_case != 0 && fabs(amp1/amp0/amp2 - 1.) > 1.e-7)
+		{
+			std::cout << std::setw(4) <<  which_case << std::setw(12) << amp1 / amp0 / amp2 - 1;
+			test_Mi(ds);
+		}
+		if(which_case == 0 && fabs(amp1/amp0 - 1.) > 1.e-7)
+			std::cout << "err: amp\n";
 		
-// 		p(c) =  amp1;
 		pair = &map[ds.particles];
 		if(pair->value != 0. && fabs(pair->value - amp1) > 1.e-7)
 			std::cout << "err:map\n";
 		pair->value = amp1;
 		pair->count ++;
 		
-		if(c % 100 == 0)
-			std::cout << "\r" << 100. * (c + 1) / n_measure;
+		if((c + 1) % (n_measure / 128) == 0)
+		{
+			std::cout << "\r" << std::setw(5) << 100 * (c + 1) / n_measure << " %";
+			std::cout.flush();
+		}
+		
 	}
+	std::cout << "\n";
 	
 	p.save("p.bin");
 	

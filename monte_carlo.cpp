@@ -4,14 +4,19 @@
 #include "linear_algebra.h"
 #include "utilities.h"
 
+// #define lock_face_bb
+// #define lock_face_bf
+// #define lock_face_ff
 
 template<class type>
 void initial_configuration(unsigned int Nu, unsigned int Nd, data_structures<type> &ds)
 {
-	unsigned int x, y, L, c, max_attempts;
+	unsigned int x, y, L, c, s, max_attempts;
+	double dummy;
 	arma::uvec edges, e;
-	ds.Nu = Nu;
-	ds.Nd = Nd;
+	
+	ds.Nf[0] = Nu;
+	ds.Nf[1] = Nd;
 	L = ds.L;
 	
 	if(L % 2 == 1)
@@ -32,46 +37,42 @@ void initial_configuration(unsigned int Nu, unsigned int Nd, data_structures<typ
 		throw "Too many fermions";
 	
 	ds.particles.zeros(2 * L * L);
-	ds.Mu.set_size(Nu, Nu);
-	ds.Md.set_size(Nd, Nd);
+	ds.M[0].set_size(Nu, Nu);
+	ds.M[1].set_size(Nd, Nd);
 	
-	ds.Ju = sort_index(ds.w_u);
-	ds.Jd = sort_index(ds.w_d);
-	ds.Ku = ds.Ju.rows(Nu, ds.Ju.n_rows - 1);
-	ds.Kd = ds.Jd.rows(Nd, ds.Jd.n_rows - 1);
-	ds.Ju.resize(Nu);
-	ds.Jd.resize(Nd);
+	for(s = 0; s < 2; s++)
+	{
+		ds.J[s] = sort_index(ds.w[s]);
+		ds.K[s] = ds.J[s].rows(ds.Nf[s], ds.J[s].n_rows - 1);
+		ds.J[s].resize(ds.Nf[s]);
+	}
 	
-	for(c = 0; c < Nu; c++)
+	for(c = 0; c < Nu + Nd; c++)
 	{
 		ds.particles(edges(c)) = c + 2;
 		e << edges(c);
-		ds.Mu.row(c) = ds.psi_u(e, ds.Ju);
+		c < Nu ? s = 0 : s = 1;
+		ds.M[s].row(c - s * Nu) = ds.psi[s](e, ds.J[s]);
 	}
-	for(; c < Nu + Nd; c++)
-	{
-		ds.particles(edges(c)) = c + 2;
-		e << edges(c);
-		ds.Md.row(c - Nu) = ds.psi_d(e, ds.Jd);
-	}
-	for(; c < edges.n_elem; c++)
+	
+	for(c = Nu + Nd; c < edges.n_elem; c++)
 	{
 		ds.particles(edges(c)) = 1;
 	}
 	
 	c = 0;
 	max_attempts = 10;
-	while(c < max_attempts && (singular(ds.Mu) || singular(ds.Md)))
+	while(c < max_attempts && (singular(ds.M[0]) || singular(ds.M[1])))
 	{
-		while(rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), false, ds) < 2);
+		while(rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), false, dummy, ds) < 2);
 		c++;
 	}
 	if(c == max_attempts)
 		throw "Unable to find regular configuration";
 	std::cout << "found regular configuration after " << c << " rotations.\n";
 	
-	ds.Mui = arma::inv(ds.Mu);
-	ds.Mdi = arma::inv(ds.Md);
+	ds.Mi[0] = arma::inv(ds.M[0]);
+	ds.Mi[1] = arma::inv(ds.M[1]);
 }
 
 template <class type>
@@ -79,6 +80,7 @@ unsigned int rotate_face(
 	unsigned int f, 
 	unsigned int clockwise, 
 	bool step,
+	double &amp,
 	data_structures<type> &ds)
 {
 	arma::uvec particles, edge;
@@ -87,42 +89,42 @@ unsigned int rotate_face(
 	if(particles(0) == 0 && particles(2) == 0)
 	{
 		if     (particles(1) == 1 && particles(3) == 1)
-			return rotate_face_bb(edge(1), edge(2), edge(3), edge(0), step, ds);
+			return rotate_face_bb(edge(1), edge(2), edge(3), edge(0), step, amp, ds);
 		else if(particles(1) == 1 && particles(3) >= 2)
 			if(clockwise)
-				return rotate_face_bf(edge(1), edge(0), edge(3), edge(2), step, ds);
+				return rotate_face_bf(edge(1), edge(0), edge(3), edge(2), step, amp, ds);
 			else
-				return rotate_face_bf(edge(1), edge(2), edge(3), edge(0), step, ds);
+				return rotate_face_bf(edge(1), edge(2), edge(3), edge(0), step, amp, ds);
 		else if(particles(1) >= 2 && particles(3) == 1)
 			if(clockwise)
-				return rotate_face_bf(edge(3), edge(2), edge(1), edge(0), step, ds);
+				return rotate_face_bf(edge(3), edge(2), edge(1), edge(0), step, amp, ds);
 			else
-				return rotate_face_bf(edge(3), edge(0), edge(1), edge(2), step, ds);
+				return rotate_face_bf(edge(3), edge(0), edge(1), edge(2), step, amp, ds);
 		else if(particles(1) >= 2 && particles(3) >= 2)
 			if(clockwise)
-				return rotate_face_ff(edge(1), edge(0), edge(3), edge(2), step, ds);
+				return rotate_face_ff(edge(1), edge(0), edge(3), edge(2), step, amp, ds);
 			else
-				return rotate_face_ff(edge(1), edge(2), edge(3), edge(0), step, ds);
+				return rotate_face_ff(edge(1), edge(2), edge(3), edge(0), step, amp, ds);
 	}
 	else if(particles(1) == 0 && particles(3) == 0)
 	{
 		if     (particles(0) == 1 && particles(2) == 1)
-			return rotate_face_bb(edge(0), edge(1), edge(2), edge(3), step, ds);
+			return rotate_face_bb(edge(0), edge(1), edge(2), edge(3), step, amp, ds);
 		else if(particles(0) == 1 && particles(2) >= 2)
 			if(clockwise)
-				return rotate_face_bf(edge(0), edge(3), edge(2), edge(1), step, ds);
+				return rotate_face_bf(edge(0), edge(3), edge(2), edge(1), step, amp, ds);
 			else
-				return rotate_face_bf(edge(0), edge(1), edge(2), edge(3), step, ds);
+				return rotate_face_bf(edge(0), edge(1), edge(2), edge(3), step, amp, ds);
 		else if(particles(0) >= 2 && particles(2) == 1)
 			if(clockwise)
-				return rotate_face_bf(edge(2), edge(1), edge(0), edge(3), step, ds);
+				return rotate_face_bf(edge(2), edge(1), edge(0), edge(3), step, amp, ds);
 			else
-				return rotate_face_bf(edge(2), edge(3), edge(0), edge(1), step, ds);
+				return rotate_face_bf(edge(2), edge(3), edge(0), edge(1), step, amp, ds);
 		else if(particles(0) >= 2 && particles(2) >= 2)
 			if(clockwise)
-				return rotate_face_ff(edge(0), edge(3), edge(2), edge(1), step, ds);
+				return rotate_face_ff(edge(0), edge(3), edge(2), edge(1), step, amp, ds);
 			else
-				return rotate_face_ff(edge(0), edge(1), edge(2), edge(3), step, ds);
+				return rotate_face_ff(edge(0), edge(1), edge(2), edge(3), step, amp, ds);
 	}
 	
 	return 0;
@@ -136,11 +138,13 @@ unsigned int rotate_face_bb(
 	unsigned int origin2,
 	unsigned int destination2,
 	bool step,
+	double &amp,
 	data_structures<type> & ds)
 {
-// 	return 0; // warning
+#ifdef lock_face_bb
+	return 0;
+#endif
 	bool accept = false;
-	double amp;
 	
 	if(ds.particles(origin1) != 1 || ds.particles(origin2) != 1)
 		throw "logic error: this should never happen";
@@ -174,65 +178,54 @@ unsigned int rotate_face_bf(
 	unsigned int origin2,
 	unsigned int destination2,
 	bool step,
+	double & amp,
 	data_structures<type> & ds)
 {
-// 	return 0; // warning
+#ifdef lock_face_bf
+	return 0;
+#endif
 	bool accept = false;
-	unsigned int p;
-	double amp;
+	unsigned int p, s;
+
 	type det;
-	arma::Mat<type> U, V, *M, *Mi;
-	arma::uvec e;
+	arma::Col<type> U;
+	arma::Row<type> V;
 	
 	p = ds.particles(origin2) - 2;
 	
-	if(ds.particles(origin1) != 1 || p > ds.Nu + ds.Nd)
+	if(ds.particles(origin1) != 1 || p > ds.Nf[0] + ds.Nf[1])
 		throw "logic error: this should never happen";
 	
-	if(p < ds.Nu)
-	{
-		M = &ds.Mu;
-		Mi = &ds.Mui;
-		
-		e << destination2;
-		V = ds.psi_u(e, ds.Ju);
-		e << origin2;
-		V -= ds.psi_u(e, ds.Ju);
-	}
+	if(p < ds.Nf[0])
+		s = 0;
 	else
 	{
-		p -=  ds.Nu;
-		M = &ds.Md;
-		Mi = &ds.Mdi;
-		
-		e << destination2;
-		V = ds.psi_d(e, ds.Jd);
-		e << origin2;
-		V -= ds.psi_d(e, ds.Jd);
+		p -=  ds.Nf[0];
+		s = 1;
 	}
 	
-	
+	V = ds.psi[s](destination2 * arma::ones<arma::uvec>(1), ds.J[s]);
+	V -= ds.psi[s](origin2 * arma::ones<arma::uvec>(1), ds.J[s]);
 	
 	if(step)
 	{
 		
-		U.zeros(Mi->n_cols, 1);
+		U.zeros(ds.Nf[s]);
 		U(p, 0) = 1;
-		U = (*Mi) * U;
+		U = ds.Mi[s] * U;
 		
-		det = 1. + dot(V.row(0), U.col(0));
+		det = 1. + dot(V, U);
 		amp = abs_squared(det * ds.phi(destination1) / ds.phi(origin1));
 		if(amp > rng::uniform())
 		{
-// 			std::cout << std::setw(12) << amp;
 			accept = true;
-			(*Mi) -= (U * V * (*Mi)) / det;
+			ds.Mi[s] -= (U * V * ds.Mi[s]) / det;
 		}
 
 	}
 	if(!step || accept)
 	{
-		M->row(p) += V;
+		ds.M[s].row(p) += V;
 		ds.particles(destination1) = ds.particles(origin1);
 		ds.particles(destination2) = ds.particles(origin2);
 		ds.particles(origin1) = 0;
@@ -251,130 +244,115 @@ unsigned int rotate_face_ff(
 	unsigned int origin2,
 	unsigned int destination2,
 	bool step,
+	double &amp,
 	data_structures<type> & ds)
 {
-// 	return 0; // warning
+#ifdef lock_face_ff
+	return 0;
+#endif
 	bool accept = false;
-	unsigned int p1, p2, isw, return_value;
-	double amp;
-	type det1, det2;
-	arma::Mat<type> U, V, K, *M, *Mi;
-	arma::Row<type> Vu, Vd;
-	arma::Col<type> Uu, Ud;
+	unsigned int p1, p2,  s1, s2, return_value;
+	type det[2];
+	arma::Mat<type> U[2], V[2], K;
 	arma::uvec e;
 	
 	p1 = ds.particles(origin1) - 2;
 	p2 = ds.particles(origin2) - 2;
 	
-	if(p1 > ds.Nu + ds.Nd || p2 > ds.Nu + ds.Nd)
+	if(p1 > ds.Nf[0] + ds.Nf[1])
+		throw "logic error: this should never happen";
+	if(p2 > ds.Nf[0] + ds.Nf[1])
 		throw "logic error: this should never happen";
 	
-	if(p1 > p2)
+	if(p1 < ds.Nf[0])
+		s1 = 0;
+	else
 	{
-		swap(origin1, origin2);
-		swap(destination1, destination2);
-		swap(p1, p2);
+		s1 = 1;
+		p1 -= ds.Nf[0];
 	}
 	
-	if((p1 < ds.Nu && p2 < ds.Nu) || (p1 >= ds.Nu && p2 >= ds.Nu))
+	if(p2 < ds.Nf[0])
+		s2 = 0;
+	else
+	{
+		s2 = 1;
+		p2 -= ds.Nf[0];
+	}
+	
+
+	if(s1 == s2)
 	{
 		
-		if(p1 < ds.Nu && p2 < ds.Nu)
-		{
-			M = &ds.Mu;
-			Mi = &ds.Mui;
-			
-			e << destination1 << destination2;
-			V = ds.psi_u(e, ds.Ju);
-			e << origin1 << origin2;
-			V -= ds.psi_u(e, ds.Ju);
-		}
-		else if (p1 >= ds.Nu && p2 >= ds.Nu)
-		{
-			p1 -= ds.Nu;
-			p2 -= ds.Nu;
-			M = &ds.Md;
-			Mi = &ds.Mdi;
-			
-			e << destination1 << destination2;
-			V = ds.psi_d(e, ds.Jd);
-			e << origin1 << origin2;
-			V -= ds.psi_d(e, ds.Jd);
-		}
-		else
-			throw "logic error: this should never happen";
-		
-
+		e << destination1 << destination2;
+		V[s1] = ds.psi[s1](e, ds.J[s1]);
+		e << origin1 << origin2;
+		V[s1] -= ds.psi[s1](e, ds.J[s1]);
 			
 		if(step)
 		{
 
-			U.zeros(Mi->n_cols, 2);
-			U(p1, 0) = 1;
-			U(p2, 1) = 1;
-			U = (*Mi) * U;
-			K = V * U;
+			U[s1].zeros(ds.Nf[s1], 2);
+			U[s1](p1, 0) = 1;
+			U[s1](p2, 1) = 1;
+			U[s1] = ds.Mi[s1] * U[s1];
+			K = V[s1] * U[s1];
 			K(0, 0) += 1;
 			K(1, 1) += 1;
-			det1 = K(0, 0) * K(1, 1) - K(0, 1) * K(1, 0);
-			amp = abs_squared(det1);
+			det[s1] = K(0, 0) * K(1, 1) - K(0, 1) * K(1, 0);
+			amp = abs_squared(det[s1]);
 			if(amp > rng::uniform())
 			{
-// 				std::cout << std::setw(12) << amp;
 				accept = true;
-				(*Mi) -= U * inv(K) * V * (*Mi);
+				ds.Mi[s1] -= U[s1] * inv(K) * V[s1] * ds.Mi[s1];
 			}
 		}
 		if(!step || accept)
 		{
 			return_value = 3;
-			M->row(p1) += V.row(0);
-			M->row(p2) += V.row(1);
+			ds.M[s1].row(p1) += V[s1].row(0);
+			ds.M[s2].row(p2) += V[s1].row(1);
 		}
 	}
-	else if((p1 < ds.Nu && p2 >= ds.Nu))
+	else
 	{
-		p2 -= ds.Nu;
 		
 		e << destination1;
-		Vu =  ds.psi_u(e, ds.Ju);
+		V[s1] =  ds.psi[s1](e, ds.J[s1]);
 		e << origin1;
-		Vu -= ds.psi_u(e, ds.Ju);
+		V[s1] -= ds.psi[s1](e, ds.J[s1]);
 		
 		e << destination2;
-		Vd =  ds.psi_d(e, ds.Jd);
+		V[s2] =  ds.psi[s2](e, ds.J[s2]);
 		e << origin2;
-		Vd -= ds.psi_d(e, ds.Jd);
+		V[s2] -= ds.psi[s2](e, ds.J[s2]);
 		
 		if(step)
 		{
-			Uu.zeros(ds.Nu);
-			Ud.zeros(ds.Nd);
-			Uu(p1) = 1;
-			Ud(p2) = 1;
-			Uu = ds.Mui * Uu;
-			Ud = ds.Mdi * Ud;
+			U[s1].zeros(ds.Nf[s1]);
+			U[s2].zeros(ds.Nf[s2]);
+			U[s1](p1) = 1;
+			U[s2](p2) = 1;
+			U[s1] = ds.Mi[s1] * U[s1];
+			U[s2] = ds.Mi[s2] * U[s2];
 			
-			det1 = 1. + dot(Vu, Uu);
-			det2 = 1. + dot(Vd, Ud);
-			amp = abs_squared(det1 * det2);
+			det[s1] = 1. + dot(V[s1], U[s1]);
+			det[s2] = 1. + dot(V[s2], U[s2]);
+			amp = abs_squared(det[0] * det[1]);
 			if(amp > rng::uniform())
 			{
-// 				std::cout << std::setw(12) << amp;
 				return_value = 4;
 				accept = true;
-				ds.Mui -= (Uu * Vu * ds.Mui) / det1;
-				ds.Mdi -= (Ud * Vd * ds.Mdi) / det2;
+				ds.Mi[s1] -= (U[s1] * V[s1] * ds.Mi[s1]) / det[s1];
+				ds.Mi[s2] -= (U[s2] * V[s2] * ds.Mi[s2]) / det[s2];
 			}
 		}
 		if(!step || accept)
 		{
-			ds.Mu.row(p1) += Vu;
-			ds.Md.row(p2) += Vd;
+			ds.M[s1].row(p1) += V[s1];
+			ds.M[s2].row(p2) += V[s2];
 		}
 	}
-	else
-		throw "logic error: this should never happen";
 	
 	if(!step || accept)
 	{
@@ -385,7 +363,6 @@ unsigned int rotate_face_ff(
 		return return_value;
 	}
 	return 0;
-	
 }
 
 bool apriori_swap_proposal(const arma::vec& w, const arma::uvec &Jo, const arma::uvec & Je, unsigned int &io, unsigned int &ie)
@@ -431,6 +408,7 @@ unsigned int rotate_face<double>(
 	unsigned int f, 
 	unsigned int clockwise, 
 	bool step,
+	double &amp,
 	data_structures<double> &ds);
 
 template 
@@ -438,4 +416,5 @@ unsigned int rotate_face<arma::cx_double>(
 	unsigned int f, 
 	unsigned int clockwise, 
 	bool step,
+	double &amp,
 	data_structures<arma::cx_double> &ds);

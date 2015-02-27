@@ -7,19 +7,17 @@ template <class type>
 struct data_structures
 {
 	unsigned int L;
-	unsigned int Nu, Nd;
+	unsigned int Nf[2];
 	unsigned int n_faces;
 	arma::umat face_edges;
 	arma::umat adjacent_faces;
 	arma::uvec particles;
-	arma::Mat<type> psi_u, psi_d;
+	arma::Mat<type> psi[2];
 	arma::Col<type> phi;
-	arma::vec w_u, w_d;
-	arma::uvec Ju, Ku, Jd, Kd;
-	arma::Mat<type> Mu; 
-	arma::Mat<type> Md; 
-	arma::Mat<type> Mui; 
-	arma::Mat<type> Mdi;
+	arma::vec w[2];
+	arma::uvec J[2], K[2];
+	arma::Mat<type> M[2];  
+	arma::Mat<type> Mi[2]; 
 };
 
 template<class type>

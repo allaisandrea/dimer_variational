@@ -69,17 +69,17 @@ void homogeneous_state(
 		Py(i, Pi) = Py(Pi, i) = 1;
 	}
 	
-	arma::eig_sym(ds.w_u, psi, H + rng::gaussian() * Px + rng::gaussian() * Py);
+	arma::eig_sym(ds.w[0], psi, H + rng::gaussian() * Px + rng::gaussian() * Py);
 	
-	for(i = 0; i + 1 < ds.w_u.n_elem; i++)
-		if(fabs(ds.w_u(i) - ds.w_u(i + 1)) < 1.e-8)
+	for(i = 0; i + 1 < ds.w[0].n_elem; i++)
+		if(fabs(ds.w[0](i) - ds.w[0](i + 1)) < 1.e-8)
 			throw "Degeneracy has not been fully lifted";
 	
 	for(i = 0; i < 2 * L * L; i++)
-		ds.w_u(i) = arma::dot(psi.col(i), H * psi.col(i));
-	ds.w_d = ds.w_u;
+		ds.w[0](i) = arma::dot(psi.col(i), H * psi.col(i));
+	ds.w[1] = ds.w[0];
 	
-	ds.psi_u = ds.psi_d = arma::conv_to<arma::Mat<type> >::from(psi);
+	ds.psi[1] = ds.psi[0] = arma::conv_to<arma::Mat<type> >::from(psi);
 	
 	ds.phi.ones(2 * L * L);
 }

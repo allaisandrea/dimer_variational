@@ -11,6 +11,7 @@ unsigned int rotate_face(
 	unsigned int f, 
 	unsigned int clockwise, 
 	bool step,
+	double &amp,
 	data_structures<type> &ds);
 
 bool apriori_swap_proposal(const arma::vec& w, const arma::uvec &Jo, const arma::uvec &Je, unsigned int &io, unsigned int &ie);
