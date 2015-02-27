@@ -65,17 +65,17 @@ void initial_configuration(unsigned int Nu, unsigned int Nd, data_structures<typ
 	
 	c = 0;
 	max_attempts = 10;
-	while(c < max_attempts && (singular(ds.M[0]) || singular(ds.M[1])))
+	while(c < max_attempts && ((ds.M[0].n_rows > 0 && singular(ds.M[0])) || (ds.M[1].n_rows > 0 && singular(ds.M[1]))))
 	{
-		while(rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), false, dummy, ds) < 2);
+		while(rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), false, dummy, ds) < 2); 
 		c++;
 	}
 	if(c == max_attempts)
 		throw "Unable to find regular configuration";
 	std::cout << "found regular configuration after " << c << " rotations.\n";
-	
-	ds.Mi[0] = arma::inv(ds.M[0]);
-	ds.Mi[1] = arma::inv(ds.M[1]);
+	for(s = 0; s < 2; s++)
+		if(ds.M[s].n_rows > 0)
+			ds.Mi[s] = arma::inv(ds.M[s]);
 }
 
 template <class type>
@@ -414,7 +414,7 @@ bool swap_states(unsigned int s, double& amp, data_structures<type> & ds)
 	arma::Col<type> U;
 	arma::Row<type> V;
 	
-	if(apriori_swap_proposal(ds.w[s], ds.J[s], ds.K[s], io, ie))
+	if(ds.Nf[s] > 0 && apriori_swap_proposal(ds.w[s], ds.J[s], ds.K[s], io, ie))
 	{
 		
 		
