@@ -1,4 +1,6 @@
 #include "linear_algebra.h"
+#include <exception>
+
 extern "C"{
 	void dgeqp3_(int*, int*, double*, int* m, int*, double*, double*, int*, int*);
 	void dorgqr_(int *, int*, int*, double*, int*, double*, double*, int*, int*);
@@ -23,14 +25,14 @@ void pivoting_qr_decomposition(arma::mat &A, arma::mat &Q, arma::uvec &perm)
 	
 	lwork = -1;
 	dgeqp3_(&m, &n, A.memptr(), &m, jpvt.memptr(), tau.memptr(), &buf, &lwork, &info);
-	if(info != 0) throw "QR decomposition failed";
+	if(info != 0) throw std::runtime_error("QR decomposition failed");
 	
 	lwork = buf;
 	if(lwork > work.n_elem)
 		work.set_size(lwork);
 
 	dgeqp3_(&m, &n, A.memptr(), &m, jpvt.memptr(), tau.memptr(), work.memptr(), &lwork, &info);
-	if(info != 0) throw "QR decomposition failed";
+	if(info != 0) throw std::runtime_error("QR decomposition failed");
 	
 	perm.set_size(n);
 	for(i = 0; i < n; i++)
@@ -45,7 +47,7 @@ void pivoting_qr_decomposition(arma::mat &A, arma::mat &Q, arma::uvec &perm)
 	}
 	
 	dorgqr_(&m, &m, &ltau, Q.memptr(), &m, tau.memptr(), work.memptr(), &lwork, &info);
-	if(info != 0) throw "Unitary Q reconstruction failed";
+	if(info != 0) throw std::runtime_error("Unitary Q reconstruction failed");
 }
 
 void pivoting_qr_decomposition(arma::cx_mat &A, arma::cx_mat &Q, arma::uvec &perm)
@@ -67,14 +69,14 @@ void pivoting_qr_decomposition(arma::cx_mat &A, arma::cx_mat &Q, arma::uvec &per
 	if(work.n_elem < 2 * (n + 1))
 		work.set_size(2 * (n + 1));
 	zgeqp3_(&m, &n, (double*)A.memptr(), &m, jpvt.memptr(), tau.memptr(), work.memptr(), &lwork, rwork.memptr(), &info);
-	if(info != 0) throw "QR decomposition failed";
+	if(info != 0) throw std::runtime_error("QR decomposition failed");
 	
 	lwork = 2 * work(0);
 	if(lwork > work.n_elem)
 		work.set_size(lwork);
 
 	zgeqp3_(&m, &n, (double*)A.memptr(), &m, jpvt.memptr(), tau.memptr(), work.memptr(), &lwork, rwork.memptr(), &info);
-	if(info != 0) throw "QR decomposition failed";
+	if(info != 0) throw std::runtime_error("QR decomposition failed");
 	
 	perm.set_size(n);
 	for(i = 0; i < n; i++)
@@ -89,8 +91,46 @@ void pivoting_qr_decomposition(arma::cx_mat &A, arma::cx_mat &Q, arma::uvec &per
 	}
 	
 	zungqr_(&m, &m, &ltau, (double*)Q.memptr(), &m, tau.memptr(), work.memptr(), &lwork, &info);
-	if(info != 0) throw "Unitary Q reconstruction failed";
+	if(info != 0) throw std::runtime_error("Unitary Q reconstruction failed");
 }
+
+template<class type>
+void rank_k_update(type a, const arma::Mat<type> &_U, const arma::Mat<type>&_V, arma::Mat<type>& _A)
+{
+	unsigned int i, j, nj, k, m, n, p, mk;
+	type *A, aVj;
+	const type *U, *V;
+	
+	m = _U.n_rows;
+	n = _V.n_cols;
+	p = _U.n_cols;
+	if(_V.n_rows != p || _A.n_rows != m || _A.n_cols != n)
+		throw std::logic_error("Incorrect matrix dimensions");
+	
+	
+		
+	U = _U.memptr();
+	V = _V.memptr();
+	A = _A.memptr();
+	for(k = 0; k < p; k++)
+	{
+		for(j = 0; j < n; j++)
+		{
+			nj = n * j;
+			aVj = a * V[k + p * j];
+			mk = m * k;
+			for(i = 0; i < m; i++)
+				_A[i + nj] += _U[i + mk] * aVj;
+		}
+	}
+
+}
+
+template
+void rank_k_update<double>(double a, const arma::Mat<double> &_U, const arma::Mat<double>&_V, arma::Mat<double>& _A);
+
+template
+void rank_k_update<arma::cx_double>(arma::cx_double a, const arma::Mat<arma::cx_double> &_U, const arma::Mat<arma::cx_double>&_V, arma::Mat<arma::cx_double>& _A);
 
 template<class type>
 bool singular(const arma::Mat<type> &M)

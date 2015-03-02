@@ -1,4 +1,5 @@
 #include <iomanip>
+#include <exception>
 #include "monte_carlo.h"
 #include "rng.h"
 #include "linear_algebra.h"
@@ -20,7 +21,7 @@ void initial_configuration(unsigned int Nu, unsigned int Nd, data_structures<typ
 	L = ds.L;
 	
 	if(L % 2 == 1)
-		throw "Lattice side must be even";
+		throw std::logic_error("Lattice side must be even");
 	
 	edges.set_size(L * L / 2);
 	
@@ -34,7 +35,7 @@ void initial_configuration(unsigned int Nu, unsigned int Nd, data_structures<typ
 	edges = shuffle(edges);
 	
 	if(edges.n_elem < Nu + Nd)
-		throw "Too many fermions";
+		throw std::logic_error("Too many fermions");
 	
 	ds.particles.zeros(2 * L * L);
 	ds.M[0].set_size(Nu, Nu);
@@ -71,7 +72,7 @@ void initial_configuration(unsigned int Nu, unsigned int Nd, data_structures<typ
 		c++;
 	}
 	if(c == max_attempts)
-		throw "Unable to find regular configuration";
+		throw std::runtime_error("Unable to find regular configuration");
 	std::cout << "found regular configuration after " << c << " rotations.\n";
 	for(s = 0; s < 2; s++)
 		if(ds.M[s].n_rows > 0)
@@ -150,7 +151,7 @@ unsigned int rotate_face_bb(
 	bool accept = false;
 	
 	if(ds.particles(origin1) != 1 || ds.particles(origin2) != 1)
-		throw "logic error: this should never happen";
+		throw std::logic_error("This should never happen");
 	
 	
 	if(step)
@@ -193,12 +194,12 @@ unsigned int rotate_face_bf(
 	type det;
 	arma::uvec e;
 	arma::Col<type> U;
-	arma::Row<type> V;
+	arma::Row<type> V, buf;
 	
 	p = ds.particles(origin2) - 2;
 	
 	if(ds.particles(origin1) != 1 || p > ds.Nf[0] + ds.Nf[1])
-		throw "logic error: this should never happen";
+		throw std::logic_error("This should never happen");
 	
 	if(p < ds.Nf[0])
 		s = 0;
@@ -215,17 +216,15 @@ unsigned int rotate_face_bf(
 	
 	if(step)
 	{
-		
-		U.zeros(ds.Nf[s]);
-		U(p, 0) = 1;
-		U = ds.Mi[s] * U;
+		U = ds.Mi[s].col(p);
 		
 		det = 1. + dot(V, U);
 		amp = abs_squared(det * ds.phi(destination1) / ds.phi(origin1));
 		if(amp > rng::uniform())
 		{
 			accept = true;
-			ds.Mi[s] -= (U * V * ds.Mi[s]) / det;
+			buf = V * ds.Mi[s];
+			rank_k_update(-1. / det, U, buf, ds.Mi[s]);
 		}
 
 	}
@@ -260,16 +259,16 @@ unsigned int rotate_face_ff(
 	bool accept = false;
 	unsigned int p1, p2,  s1, s2, return_value;
 	type det[2];
-	arma::Mat<type> U[2], V[2], K;
+	arma::Mat<type> U[2], V[2], K, buf;
 	arma::uvec e;
 	
 	p1 = ds.particles(origin1) - 2;
 	p2 = ds.particles(origin2) - 2;
 	
 	if(p1 > ds.Nf[0] + ds.Nf[1])
-		throw "logic error: this should never happen";
+		throw std::logic_error("This should never happen");
 	if(p2 > ds.Nf[0] + ds.Nf[1])
-		throw "logic error: this should never happen";
+		throw std::logic_error("This should never happen");
 	
 	if(p1 < ds.Nf[0])
 		s1 = 0;
@@ -298,11 +297,9 @@ unsigned int rotate_face_ff(
 			
 		if(step)
 		{
-
-			U[s1].zeros(ds.Nf[s1], 2);
-			U[s1](p1, 0) = 1;
-			U[s1](p2, 1) = 1;
-			U[s1] = ds.Mi[s1] * U[s1];
+			e << p1 << p2;
+			U[s1] = ds.Mi[s1].cols(e);
+			
 			K = V[s1] * U[s1];
 			K(0, 0) += 1;
 			K(1, 1) += 1;
@@ -311,7 +308,9 @@ unsigned int rotate_face_ff(
 			if(amp > rng::uniform())
 			{
 				accept = true;
-				ds.Mi[s1] -= U[s1] * inv(K) * V[s1] * ds.Mi[s1];
+				buf = V[s1] * ds.Mi[s1];
+				buf = inv(K) * buf;
+				rank_k_update((type)-1., U[s1], buf, ds.Mi[s1]);
 			}
 		}
 		if(!step || accept)
@@ -336,12 +335,8 @@ unsigned int rotate_face_ff(
 		
 		if(step)
 		{
-			U[s1].zeros(ds.Nf[s1]);
-			U[s2].zeros(ds.Nf[s2]);
-			U[s1](p1) = 1;
-			U[s2](p2) = 1;
-			U[s1] = ds.Mi[s1] * U[s1];
-			U[s2] = ds.Mi[s2] * U[s2];
+			U[s1] = ds.Mi[s1].col(p1);
+			U[s2] = ds.Mi[s2].col(p2);
 			
 			det[s1] = 1. + dot(V[s1], U[s1]);
 			det[s2] = 1. + dot(V[s2], U[s2]);
@@ -350,8 +345,10 @@ unsigned int rotate_face_ff(
 			{
 				return_value = 4;
 				accept = true;
-				ds.Mi[s1] -= (U[s1] * V[s1] * ds.Mi[s1]) / det[s1];
-				ds.Mi[s2] -= (U[s2] * V[s2] * ds.Mi[s2]) / det[s2];
+				buf = V[s1] * ds.Mi[s1];
+				rank_k_update(-1. / det[s1], U[s1], buf, ds.Mi[s1]);
+				buf = V[s2] * ds.Mi[s2];
+				rank_k_update(-1. / det[s2], U[s2], buf, ds.Mi[s2]);
 			}
 		}
 		if(!step || accept)
@@ -411,7 +408,7 @@ bool swap_states(unsigned int s, double& amp, data_structures<type> & ds)
 	unsigned int io, ie;
 	type det;
 	arma::uvec e;
-	arma::Col<type> U;
+	arma::Col<type> U, buf;
 	arma::Row<type> V;
 	
 	if(ds.Nf[s] > 0 && apriori_swap_proposal(ds.w[s], ds.J[s], ds.K[s], io, ie))
@@ -424,16 +421,15 @@ bool swap_states(unsigned int s, double& amp, data_structures<type> & ds)
 		e << ds.J[s](io);
 		U -= ds.psi[s](ds.edge_of[s], e);
 		
-		V.zeros(ds.Nf[s]);
-		V(io) = 1.;
-		V = V * ds.Mi[s];
+		V = ds.Mi[s].row(io);
 		
 		det = 1. + dot(V, U);
 		amp = abs_squared(det);
 		if(amp > rng::uniform())
 		{
 			ds.M[s].col(io) += U;
-			ds.Mi[s] -= (ds.Mi[s] * U * V) / det;
+			buf = ds.Mi[s] * U;
+			rank_k_update(-1. / det, buf, V, ds.Mi[s]);
 			swap(ds.J[s](io), ds.K[s](ie));
 			return true;
 		}

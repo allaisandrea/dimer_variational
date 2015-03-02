@@ -231,7 +231,7 @@ double phi_amplitude(data_structures<type> ds)
 
 void test_correct_distribution()
 {
-	unsigned int L = 4, Nu = 0, Nd = 2, c, i, n_measure = 1<<20, n_skip = n_measure / 16, which_case;
+	unsigned int L = 4, Nu = 3, Nd = 3, c, i, n_measure = 1<<20, n_skip = n_measure / 16, which_case;
 	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05;
 	double amp0, amp1, amp2;
 	arma::mat Mi[2], X, p;

@@ -1,3 +1,4 @@
+#include <exception>
 #include "states.h"
 #include "rng.h"
 template<class type>
@@ -73,7 +74,7 @@ void homogeneous_state(
 	
 	for(i = 0; i + 1 < ds.w[0].n_elem; i++)
 		if(fabs(ds.w[0](i) - ds.w[0](i + 1)) < 1.e-8)
-			throw "Degeneracy has not been fully lifted";
+			throw std::runtime_error("Degeneracy has not been fully lifted");
 	
 	for(i = 0; i < 2 * L * L; i++)
 		ds.w[0](i) = arma::dot(psi.col(i), H * psi.col(i));

@@ -10,9 +10,9 @@ int main(int argc, char** argv)
 // 	test_rotate_face_no_step();
 // 	test_singular();
 // 	test_rotate_face_with_step();
-	test_correct_distribution();
+// 	test_correct_distribution();
 // 	test_apriori_swap_proposal();
-// 	test_swap_states();
+	test_swap_states();
 // 	test_map();
 // 	}
 // 	catch(const char* msg)
