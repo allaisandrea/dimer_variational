@@ -145,13 +145,66 @@ void test_Mi(const data_structures<type>& ds)
 template<class type>
 void test_edge_assignment(const data_structures<type>& ds)
 {
-	unsigned int i, s;
-	for(s = 0; s < 2; s++)
-	for(i = 0; i < ds.Nf[s]; i++)
+	unsigned int s, e, p;
+	std::set<unsigned int> fe[2];
+	std::set<unsigned int>::iterator ee;
+	
+	for(ee = ds.boson_edges.begin(); ee != ds.boson_edges.end(); ++ee)
 	{
-		if(ds.particles(ds.edge_of[s](i)) != 2 + i + s * ds.Nf[0])
+		if(ds.particles(*ee) != 1)
 			std::cout << "test_edge_assignment error\n";
 	}
+	
+	for(s = 0; s < 2; s++)
+	for(p = 0; p < ds.Nf[s]; p++)
+	{
+		e = ds.edge_of[s](p);
+		if(fe[s].find(e) != fe[s].end())
+			std::cout << "test_edge_assignment error\n";
+		if(ds.particles(e) != 2 + s * ds.Nf[0] + p)
+			std::cout << "test_edge_assignment error\n";
+		fe[s].insert(e);
+	}
+	
+	for(e = 0; e < ds.particles.n_elem; e++)
+	{
+		p = ds.particles(e);
+		if(p == 0)
+		{
+			if(ds.boson_edges.find(e) != ds.boson_edges.end())
+				std::cout << "test_edge_assignment error\n";
+			if(fe[0].find(e) != fe[0].end())
+				std::cout << "test_edge_assignment error\n";
+			if(fe[1].find(e) != fe[1].end())
+				std::cout << "test_edge_assignment error\n";
+		}
+		else if(p == 1)
+		{
+			if(ds.boson_edges.find(e) == ds.boson_edges.end())
+				std::cout << "test_edge_assignment error\n";
+			if(fe[0].find(e) != fe[0].end())
+				std::cout << "test_edge_assignment error\n";
+			if(fe[1].find(e) != fe[1].end())
+				std::cout << "test_edge_assignment error\n";
+		}
+		else if(p < 2 + ds.Nf[0] + ds.Nf[1])
+		{
+			p -= 2;
+			s = 0;
+			if(p >= ds.Nf[0])
+			{
+				p-= ds.Nf[0];
+				s = 1;
+			}
+			if(ds.boson_edges.find(e) != ds.boson_edges.end())
+				std::cout << "test_edge_assignment error\n";
+			if(ds.edge_of[s](p) != e)
+				std::cout << "test_edge_assignment error\n";
+		}
+		else
+			std::cout << "test_edge_assignment error\n";
+	}
+	
 }
 	
 void test_rotate_face_with_step()

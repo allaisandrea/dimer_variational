@@ -48,20 +48,21 @@ void initial_configuration(unsigned int Nu, unsigned int Nd, data_structures<typ
 		ds.J[s].resize(ds.Nf[s]);
 	}
 	
-	ds.edge_of[0].set_size(Nu);
-	ds.edge_of[1].set_size(Nd);
+	ds.fermion_edge[0].set_size(Nu);
+	ds.fermion_edge[1].set_size(Nd);
 	for(c = 0; c < Nu + Nd; c++)
 	{
 		ds.particles(edges(c)) = c + 2;
 		e << edges(c);
 		c < Nu ? s = 0 : s = 1;
 		ds.M[s].row(c - s * Nu) = ds.psi[s](e, ds.J[s]);
-		ds.edge_of[s](c - s * Nu) = edges(c);
+		ds.fermion_edge[s](c - s * Nu) = edges(c);
 	}
 	
 	for(c = Nu + Nd; c < edges.n_elem; c++)
 	{
 		ds.particles(edges(c)) = 1;
+		ds.boson_edges.insert(edges(c));
 	}
 	
 	c = 0;
@@ -169,6 +170,10 @@ unsigned int rotate_face_bb(
 		ds.particles(destination2) = ds.particles(origin2);
 		ds.particles(origin1) = 0;
 		ds.particles(origin2) = 0;
+		ds.boson_edges.erase(origin1);
+		ds.boson_edges.erase(origin2);
+		ds.boson_edges.insert(destination1);
+		ds.boson_edges.insert(destination2);
 		return 1;
 	}
 	return 0;
@@ -235,7 +240,9 @@ unsigned int rotate_face_bf(
 		ds.particles(destination2) = ds.particles(origin2);
 		ds.particles(origin1) = 0;
 		ds.particles(origin2) = 0;
-		ds.edge_of[s](p) = destination2;
+		ds.fermion_edge[s](p) = destination2;
+		ds.boson_edges.erase(origin1);
+		ds.boson_edges.insert(destination1);
 		return 2;
 	}
 	return 0;
@@ -364,8 +371,8 @@ unsigned int rotate_face_ff(
 		ds.particles(destination2) = ds.particles(origin2);
 		ds.particles(origin1) = 0;
 		ds.particles(origin2) = 0;
-		ds.edge_of[s1](p1) = destination1;
-		ds.edge_of[s2](p2) = destination2;
+		ds.fermion_edge[s1](p1) = destination1;
+		ds.fermion_edge[s2](p2) = destination2;
 		return return_value;
 	}
 	return 0;
@@ -416,10 +423,10 @@ bool swap_states(unsigned int s, double& amp, data_structures<type> & ds)
 		
 		
 		e << ds.K[s](ie);
-		U = ds.psi[s](ds.edge_of[s], e);
+		U = ds.psi[s](ds.fermion_edge[s], e);
 		
 		e << ds.J[s](io);
-		U -= ds.psi[s](ds.edge_of[s], e);
+		U -= ds.psi[s](ds.fermion_edge[s], e);
 		
 		V = ds.Mi[s].row(io);
 		
