@@ -10,7 +10,7 @@ cluster: CXXFLAGS = -O3 -D ARMA_NO_DEBUG -I $(INCLUDEDIR)
 cluster: LIBS = -llapack -lgsl -lgslcblas
 cluster: OUTPUT = ./run
 
-OBJECTS = main.o data_structures.o states.o monte_carlo.o linear_algebra.o
+OBJECTS = main.o data_structures.o states.o monte_carlo.o linear_algebra.o observables.o measure_drivers.o
 
 local: $(OBJECTS) $(OBJECTS1)
 	g++ $(CXXFLAGS) $(OBJECTS) -o $(OUTPUT) $(LIBS)

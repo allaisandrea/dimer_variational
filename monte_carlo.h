@@ -4,7 +4,7 @@
 #include "data_structures.h"
 
 template<class type>
-void initial_configuration(unsigned int Nu, unsigned int Nd, data_structures<type> &ds);
+void initial_configuration(data_structures<type> &ds);
 
 template <class type>
 unsigned int rotate_face(

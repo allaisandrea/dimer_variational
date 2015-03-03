@@ -70,7 +70,9 @@ void test_rotate_face_no_step()
 	c = 0;
 	p.set_size(ds.particles.n_rows, 0);
 	
-	initial_configuration(Nu, Nd, ds);
+	ds.Nf[0] = Nu;
+	ds.Nf[1] = Nd;
+	initial_configuration(ds);
 	p.resize(p.n_rows, p.n_cols + 1);
 	p.col(c++) = ds.particles;
 	
@@ -158,7 +160,7 @@ void test_edge_assignment(const data_structures<type>& ds)
 	for(s = 0; s < 2; s++)
 	for(p = 0; p < ds.Nf[s]; p++)
 	{
-		e = ds.edge_of[s](p);
+		e = ds.fermion_edge[s](p);
 		if(fe[s].find(e) != fe[s].end())
 			std::cout << "test_edge_assignment error\n";
 		if(ds.particles(e) != 2 + s * ds.Nf[0] + p)
@@ -198,7 +200,7 @@ void test_edge_assignment(const data_structures<type>& ds)
 			}
 			if(ds.boson_edges.find(e) != ds.boson_edges.end())
 				std::cout << "test_edge_assignment error\n";
-			if(ds.edge_of[s](p) != e)
+			if(ds.fermion_edge[s](p) != e)
 				std::cout << "test_edge_assignment error\n";
 		}
 		else
@@ -216,7 +218,9 @@ void test_rotate_face_with_step()
 	build_graph(L, ds);
 	homogeneous_state(dmu, t1, t2, t3, t4, ds);
 	
-	initial_configuration(Nu, Nd, ds);
+	ds.Nf[0] = Nu;
+	ds.Nf[1] = Nd;
+	initial_configuration(ds);
 	test_Mi(ds);
 	
 	for(c = 0; c < 100; c++)
@@ -301,7 +305,9 @@ void test_correct_distribution()
 	ds.psi[1] = ds.psi[0];
  	ds.phi += 0.05 * rng::gaussian(ds.phi.n_elem);
 	
-	initial_configuration(Nu, Nd, ds);
+	ds.Nf[0] = Nu;
+	ds.Nf[1] = Nd;
+	initial_configuration(ds);
 	
 	for(c = 0; c < n_skip; c++)
 	{
@@ -438,7 +444,9 @@ void test_swap_states()
 	ds.psi[1] = ds.psi[0];
  	ds.phi += 0.05 * rng::gaussian(ds.phi.n_elem);
 	
-	initial_configuration(Nu, Nd, ds); 
+	ds.Nf[0] = Nu;
+	ds.Nf[1] = Nd;
+	initial_configuration(ds); 
 	
 	for(c = 0; c < n_skip; c++)
 	{

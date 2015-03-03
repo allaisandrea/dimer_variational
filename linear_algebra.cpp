@@ -94,6 +94,25 @@ void pivoting_qr_decomposition(arma::cx_mat &A, arma::cx_mat &Q, arma::uvec &per
 	if(info != 0) throw std::runtime_error("Unitary Q reconstruction failed");
 }
 
+
+template<class type>
+bool singular(const arma::Mat<type> &M)
+{
+	arma::Mat<type> Q, R;
+	arma::vec s;
+	arma::uvec perm;
+	double max, min;
+	R = M;
+	pivoting_qr_decomposition(R, Q, perm);
+	s = abs(R.diag());
+	max = arma::max(s);
+	min = arma::min(s);
+	if(min == 0. || max / min > 1.e7)
+		return true;
+	return false;
+}
+
+
 template<class type>
 void rank_k_update(type a, const arma::Mat<type> &_U, const arma::Mat<type>&_V, arma::Mat<type>& _A)
 {
@@ -126,28 +145,75 @@ void rank_k_update(type a, const arma::Mat<type> &_U, const arma::Mat<type>&_V, 
 
 }
 
+template <class type>
+type trace_of_product(const arma::Mat<type> &_M1, const arma::Mat<type> &_M2)
+{
+	unsigned int i, ni, j, m, n;
+	type buf;
+	const type *M1, *M2;
+	
+	m = _M1.n_rows;
+	n = _M1.n_cols;
+	if(_M2.n_rows != n || _M2.n_cols != m)
+		throw std::logic_error("Incorrect matrix dimensions");
+	
+	M1 = _M1.memptr();
+	M2 = _M2.memptr();
+	
+	buf = 0;
+	for(i = 0; i < m; i++)
+	{
+		ni = n * i;
+		for(j = 0; j < n; j++)
+		{
+			buf += M1[i + m * j] * M2[j + ni];
+		}
+	}
+	std::cout << "test trace_of_product: " << buf << " " << trace(_M1 * _M2) << "\n";
+	return buf;
+}
+
+template <class type>
+void eigensystem_variation(const arma::Mat<type> U, const arma::vec w, const arma::Mat<type> V, arma::Mat<type> &dU, arma::vec &dw)
+{
+	unsigned int i, j;
+	dU = trans(U) * V * U;
+	dw = real(diagvec(dU));
+	
+	for(i = 0; i < dU.n_rows; i++)
+	{
+		dU(i, i) = 0.;
+		for(j = i + 1; i < dU.n_cols; j++)
+		{
+			dU(i, j) /= w(j) - w(i);
+			dU(j, i) /= w(i) - w(j);
+		}
+	}
+	
+	dU = U * dU;
+	
+}
+
+template 
+bool singular<double>(const arma::Mat<double> &M);
+
+template 
+bool singular<arma::cx_double>(const arma::Mat<arma::cx_double> &M);
+
 template
 void rank_k_update<double>(double a, const arma::Mat<double> &_U, const arma::Mat<double>&_V, arma::Mat<double>& _A);
 
 template
 void rank_k_update<arma::cx_double>(arma::cx_double a, const arma::Mat<arma::cx_double> &_U, const arma::Mat<arma::cx_double>&_V, arma::Mat<arma::cx_double>& _A);
 
-template<class type>
-bool singular(const arma::Mat<type> &M)
-{
-	arma::Mat<type> Q, R;
-	arma::vec s;
-	arma::uvec perm;
-	double max, min;
-	R = M;
-	pivoting_qr_decomposition(R, Q, perm);
-	s = abs(R.diag());
-	max = arma::max(s);
-	min = arma::min(s);
-	if(min == 0. || max / min > 1.e7)
-		return true;
-	return false;
-}
+template 
+double trace_of_product<double>(const arma::Mat<double> &_M1, const arma::Mat<double> &_M2);
 
-template bool singular<double>(const arma::Mat<double> &M);
-template bool singular<arma::cx_double>(const arma::Mat<arma::cx_double> &M);
+template 
+arma::cx_double trace_of_product<arma::cx_double>(const arma::Mat<arma::cx_double> &_M1, const arma::Mat<arma::cx_double> &_M2);
+
+template
+void eigensystem_variation<double>(const arma::Mat<double> U, const arma::vec w, const arma::Mat<double> V, arma::Mat<double> &dU, arma::vec &dw);
+
+template
+void eigensystem_variation<arma::cx_double>(const arma::Mat<arma::cx_double> U, const arma::vec w, const arma::Mat<arma::cx_double> V, arma::Mat<arma::cx_double> &dU, arma::vec &dw);

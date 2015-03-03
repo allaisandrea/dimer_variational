@@ -1,19 +1,20 @@
 #include <exception>
 #include "states.h"
 #include "rng.h"
-template<class type>
-void homogeneous_state(
+#include "linear_algebra.h"
+
+arma::mat homogeneous_state_hamiltonian(
+	unsigned int L,
 	double dmu, 
 	double t1, 
 	double t2, 
 	double t3, 
-	double t4,
-	data_structures<type> &ds)
+	double t4)
 {
-	unsigned int x, y, L, i00, i01, i10, i11, i20, i02, i, Pi;
-	arma::mat H, Px, Py, psi;
-	L = ds.L;
+	unsigned int x, y, i00, i10, i11, i01, i20, i02;
+	arma::mat H;
 	H.zeros(2 * L * L, 2 * L * L);
+	
 	for(x = 0; x < L; x++)
 	for(y = 0; y < L; y++)
 	{
@@ -49,6 +50,24 @@ void homogeneous_state(
 	}
 
 	H += trans(H);
+	return H;
+}
+
+template<class type>
+void homogeneous_state(
+	double dmu, 
+	double t1, 
+	double t2, 
+	double t3, 
+	double t4,
+	data_structures<type> &ds)
+{
+	unsigned int x, y, L, i, Pi;
+	arma::mat H, Px, Py, psi, Dpsi, tt;
+	arma::vec Dw;
+	L = ds.L;
+	
+	H = homogeneous_state_hamiltonian(L, dmu, t1, t2, t3, t4);
 	
 	Px.zeros(2 * L * L, 2 * L * L);
 	Py.zeros(2 * L * L, 2 * L * L);
@@ -82,7 +101,25 @@ void homogeneous_state(
 	
 	ds.psi[1] = ds.psi[0] = arma::conv_to<arma::Mat<type> >::from(psi);
 	
+	ds.n_derivatives = 5;
+	
+	ds.Dpsi[0].set_size(ds.psi[0].n_rows, ds.psi[0].n_cols, ds.n_derivatives);
+	ds.Dpsi[1].set_size(ds.psi[1].n_rows, ds.psi[1].n_cols, ds.n_derivatives);
+	ds.Dw[0].set_size(ds.w[0].n_rows, ds.n_derivatives);
+	ds.Dw[1].set_size(ds.w[1].n_rows, ds.n_derivatives);
+	
+	tt = arma::eye<arma::mat>(ds.n_derivatives, ds.n_derivatives);
+	
+	for(i = 0; i < ds.n_derivatives; i++)
+	{
+		eigensystem_variation(psi, ds.w[0], homogeneous_state_hamiltonian(L, tt(i, 0), tt(i, 1), tt(i, 2), tt(i, 3), tt(i, 4)), Dpsi, Dw);
+		ds.Dpsi[1].slice(i) = ds.Dpsi[0].slice(i) = arma::conv_to<arma::Mat<type> >::from(Dpsi);
+		ds.Dw[1].col(i) = Dw;
+		ds.Dw[0].col(i) = Dw;
+	}
+	
 	ds.phi.ones(2 * L * L);
+	ds.Dphi.zeros(2 * L * L, ds.n_derivatives);
 }
 
 

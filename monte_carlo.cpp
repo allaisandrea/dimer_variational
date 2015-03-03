@@ -10,14 +10,14 @@
 // #define lock_face_ff
 
 template<class type>
-void initial_configuration(unsigned int Nu, unsigned int Nd, data_structures<type> &ds)
+void initial_configuration(data_structures<type> &ds)
 {
-	unsigned int x, y, L, c, s, max_attempts;
+	unsigned int x, y, L, c, s, max_attempts, Nu, Nd;
 	double dummy;
 	arma::uvec edges, e;
 	
-	ds.Nf[0] = Nu;
-	ds.Nf[1] = Nd;
+	Nu = ds.Nf[0];
+	Nd = ds.Nf[1];
 	L = ds.L;
 	
 	if(L % 2 == 1)
@@ -446,10 +446,10 @@ bool swap_states(unsigned int s, double& amp, data_structures<type> & ds)
 }
 
 template
-void initial_configuration<double>(unsigned int Nu, unsigned int Nd, data_structures<double> &ds);
+void initial_configuration<double>(data_structures<double> &ds);
 
 template
-void initial_configuration<arma::cx_double>(unsigned int Nu, unsigned int Nd, data_structures<arma::cx_double> &ds);
+void initial_configuration<arma::cx_double>(data_structures<arma::cx_double> &ds);
 
 template 
 unsigned int rotate_face<double>(
