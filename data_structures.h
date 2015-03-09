@@ -56,6 +56,6 @@ struct data_structures
 };
 
 template<class type>
-void build_graph(unsigned int L, data_structures<type> &ds);
+void build_graph(data_structures<type> &ds);
 #endif
 

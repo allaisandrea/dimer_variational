@@ -66,7 +66,7 @@ void initial_configuration(data_structures<type> &ds)
 	}
 	
 	c = 0;
-	max_attempts = 10;
+	max_attempts = 1000;
 	while(c < max_attempts && ((ds.M[0].n_rows > 0 && singular(ds.M[0])) || (ds.M[1].n_rows > 0 && singular(ds.M[1]))))
 	{
 		while(rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), false, dummy, ds) < 2); 

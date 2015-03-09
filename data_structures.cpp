@@ -1,9 +1,9 @@
 #include "data_structures.h"
 template<class type>
-void build_graph(unsigned int L, data_structures<type> &ds)
+void build_graph(data_structures<type> &ds)
 {
-	unsigned int x, y, i1, i2, i3, i4, i5;
-	ds.L = L;
+	unsigned int L, x, y, i1, i2, i3, i4, i5;
+	L = ds.L;
 	ds.n_faces = L * L;
 	ds.particles.zeros(2 * L * L);
 	ds.face_edges.set_size(4, L * L);
@@ -28,9 +28,9 @@ void build_graph(unsigned int L, data_structures<type> &ds)
 }
 
 template
-void build_graph<double>(unsigned int L, data_structures<double> &ds);
+void build_graph<double>(data_structures<double> &ds);
 template
-void build_graph<arma::cx_double>(unsigned int L, data_structures<arma::cx_double> &ds);
+void build_graph<arma::cx_double>(data_structures<arma::cx_double> &ds);
 
 
 

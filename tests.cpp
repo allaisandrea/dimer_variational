@@ -6,25 +6,29 @@
 #include "monte_carlo.h"
 #include "linear_algebra.h"
 #include "utilities.h"
+#include "observables.h"
+#include "measure_drivers.h"
 
 void test_build_graph()
 {
 	unsigned int L = 3;
 	data_structures<double> ds;
-	build_graph(L, ds);
+	ds.L = L;
+	build_graph(ds);
 	std::cout << ds.face_edges << "\n";
 	std::cout << ds.adjacent_faces << "\n";
 }
 
 void test_homogeneous_state()
 {
-	unsigned int L = 10;
-	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05;
+	unsigned int L = 8;
+	double dmu = 0.2, t1 = 0.3, t2 = 1, t3 = 0.2, t4 = 0.9, beta = 1.;
 	data_structures<arma::cx_double> ds;
-	build_graph(L, ds);
-	homogeneous_state(dmu, t1, t2, t3, t4, ds);
-	ds.psi[0].save("psi.bin"); 
-	ds.w[0].save("w.bin");
+	ds.L = L;
+	build_graph(ds);
+	homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
+// 	ds.psi[0].save("psi.bin"); 
+// 	ds.w[0].save("w.bin");
 }
 
 template<class type>
@@ -60,12 +64,13 @@ void test_rotate_face_no_step()
 {
 	// Remember to disable the search for regular configuration.
 	unsigned int L = 6, Nu = 3, Nd = 2, c;
-	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05, dummy;
+	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05, dummy, beta = 1.;
 	arma::umat p;
 	data_structures<double> ds;
 	
-	build_graph(L, ds);
-	homogeneous_state(dmu, t1, t2, t3, t4, ds);
+	ds.L = L;
+	build_graph(ds);
+	homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
 	
 	c = 0;
 	p.set_size(ds.particles.n_rows, 0);
@@ -212,11 +217,12 @@ void test_edge_assignment(const data_structures<type>& ds)
 void test_rotate_face_with_step()
 {
 	unsigned int L = 10, Nu = 10, Nd = 10, c;
-	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05, amp;
+	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05, amp, beta = 1;
 	data_structures<double> ds;
 	
-	build_graph(L, ds);
-	homogeneous_state(dmu, t1, t2, t3, t4, ds);
+	ds.L = L;
+	build_graph(ds);
+	homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
 	
 	ds.Nf[0] = Nu;
 	ds.Nf[1] = Nd;
@@ -289,7 +295,7 @@ double phi_amplitude(data_structures<type> ds)
 void test_correct_distribution()
 {
 	unsigned int L = 4, Nu = 3, Nd = 3, c, i, n_measure = 1<<20, n_skip = n_measure / 16, which_case;
-	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05;
+	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05, beta = 1;
 	double amp0, amp1, amp2;
 	arma::mat Mi[2], X, p;
 	arma::vec w;
@@ -298,8 +304,9 @@ void test_correct_distribution()
 	std::map<arma::uvec, my_pair, classcomp>::iterator it;
 	my_pair *pair;
 
-	build_graph(L, ds);
-	homogeneous_state(dmu, t1, t2, t3, t4, ds);
+	ds.L = L;
+	build_graph(ds);
+	homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
 	X.randn(ds.psi[0].n_rows, ds.psi[0].n_cols);
 	eig_sym(w, ds.psi[0], X);
 	ds.psi[1] = ds.psi[0];
@@ -427,7 +434,7 @@ double energy(data_structures<type> &ds)
 void test_swap_states()
 {
 	unsigned int L = 4, Nu = 0, Nd = 2, c, i, n_measure = 1<<20, n_skip = n_measure / 16, which_case, s;
-	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05;
+	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05, beta = 1;
 	double amp0, amp1, amp2, E0;
 	arma::mat Mi[2], X, p;
 	arma::vec w;
@@ -437,8 +444,9 @@ void test_swap_states()
 	std::map<arma::uvec, my_pair, classcomp>::iterator it;
 	my_pair *pair;
 
-	build_graph(L, ds);
-	homogeneous_state(dmu, t1, t2, t3, t4, ds);
+	ds.L = L;
+	build_graph(ds);
+	homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
 	X.randn(ds.psi[0].n_rows, ds.psi[0].n_cols);
 	eig_sym(w, ds.psi[0], X);
 	ds.psi[1] = ds.psi[0];
@@ -511,4 +519,169 @@ void test_swap_states()
 		c++;
 	}
 	p.save("tally.bin");
+}
+
+
+void test_eigensystem_variation()
+{
+	unsigned int n = 50;
+	double eps = 1.e-7;
+	arma::mat H, U, U1, U2, V, dU1, dU2;
+	arma::vec w, w1, w2, dw1, dw2;
+	H.randn(n, n);
+	H += trans(H);
+	V.randn(n, n);
+	V += trans(V);
+	
+	eig_sym(w, U, H);
+	
+	eigensystem_variation(U, w, V, dU1, dw1);
+	
+	eig_sym(w1, U1, H + eps * V);
+	eig_sym(w2, U2, H - eps * V);
+	
+	dw2 = (w1 - w2) / 2. / eps;
+	dU2 = (U1 - U2) / 2. / eps;
+	
+	std::cout << norm(dw1 - dw2, "fro") << "\n";
+	std::cout << norm(dU1 - dU2, "fro") << "\n";
+}
+
+void test_homogeneous_state_derivatives()
+{
+	unsigned int i, j, s;
+	double eps = 1.e-7, beta = 1;
+	arma::vec tt;
+	arma::mat dt;
+	arma::mat psi[2], Dpsi[2], Dpsi_approx[2];
+	arma::vec Dw[2], Dw_approx[2], overlaps;
+	data_structures<double> ds;
+	
+	ds.L = 4;
+	
+	dt = arma::eye<arma::mat>(5, 5);
+	
+	for(i = 0; i < 5; i++)
+	{
+		tt << 0. << 0.2 << 0.3 << 0.2 << 0.1;
+		
+		homogeneous_state(tt(0), tt(1), tt(2), tt(3), tt(4), beta, ds);
+		for(s = 0; s < 2; s++)
+		{
+			psi[s] = ds.psi[s];
+			Dpsi[s] = ds.Dpsi[s].slice(i);
+			Dw[s] = ds.Dw[s].col(i);
+		}
+		
+		
+		tt += eps * dt.col(i);
+		homogeneous_state(tt(0), tt(1), tt(2), tt(3), tt(4), beta, ds);
+		for(s = 0; s< 2; s++)
+		{
+			overlaps.set_size(ds.psi[s].n_cols);
+			for(j = 0; j < ds.psi[s].n_cols; j++)
+			{
+				overlaps(j) = dot(psi[s].col(j), ds.psi[s].col(j));
+				if(fabs(fabs(overlaps(j)) - 1.) > 1.e-7)
+					std::cout << "overlap 1: " << std::setw(5) << overlaps(j) << std::setw(5) << fabs(overlaps(j)) - 1. << "\n";
+				overlaps(j) /= fabs(overlaps(j));
+			}
+			Dpsi_approx[s] = ds.psi[s] * arma::diagmat(overlaps);
+			Dw_approx[s] = ds.w[s];
+		}
+		
+		
+		tt -= 2. * eps * dt.col(i);
+		homogeneous_state(tt(0), tt(1), tt(2), tt(3), tt(4), beta, ds);
+		for(s = 0; s< 2; s++)
+		{
+			overlaps.set_size(ds.psi[s].n_cols);
+			for(j = 0; j < ds.psi[s].n_cols; j++)
+			{
+				overlaps(j) = dot(psi[s].col(j), ds.psi[s].col(j));
+				if(fabs(fabs(overlaps(j)) - 1.) > 1.e-7)
+					std::cout << "overlap 1: " << std::setw(5) << overlaps(j) << std::setw(5) << fabs(overlaps(j)) - 1. << "\n";
+				overlaps(j) /= fabs(overlaps(j));
+			}
+			Dpsi_approx[s] -= ds.psi[s] * arma::diagmat(overlaps);
+			Dw_approx[s] -= ds.w[s];
+		}
+		
+		tt += eps * dt.col(i);
+		
+		Dpsi_approx[0] /= 2 * eps;
+		Dpsi_approx[1] /= 2 * eps;
+		Dw_approx[0] /= 2 * eps;
+		Dw_approx[1] /= 2 * eps;
+		
+		std::cout << norm(Dw[0] - Dw_approx[0], "fro") << "\n";
+		std::cout << norm(Dw[1] - Dw_approx[1], "fro") << "\n";
+		std::cout << norm(Dpsi_approx[0] - Dpsi[0], "fro") <<  "\n";
+		std::cout << norm(Dpsi_approx[1] - Dpsi[1], "fro") << "\n";
+		std::cout << "\n";
+	}
+}
+
+
+void test_monte_carlo_driver()
+{
+	unsigned int i, j, n_measure = 100, n_skip = 10000, n_points = 20, n_observables;
+	double dmu = 0, t1 = 1., t2 = 0, t3 = 0, t4 = 0.5, beta = 100.;
+	double E, sE;
+	arma::mat F, dZ;
+	arma::cube sF;
+	arma::cube G, sG, EE;
+	data_structures<double> ds;
+	observables_vector_real observables;
+	arma::vec coefficients, buf1, buf2;
+	
+	
+	
+	ds.L = 10;
+	ds.Nf[0] = 8;
+	ds.Nf[1] = 8;
+	
+	observables.push_back(&boson_hopping);
+// 	observables.push_back(&boson_potential);
+	observables.push_back(&fermion_hopping_1);
+	observables.push_back(&fermion_hopping_2);
+	observables.push_back(&fermion_hopping_3);
+	n_observables = observables.size();
+	
+	build_graph(ds);
+
+	rng::seed(1);
+	G.zeros(5, n_points, n_observables);
+	sG.zeros(5, n_points, n_observables);
+	EE.zeros(2, n_points, n_observables); 
+	sF.zeros(20, n_observables, n_points);
+	for(i = 0; i < n_points; i++)
+	{
+		std::cout << "point " << i + 1 << "..." << std::endl;
+		t2 = -1. +  2. * i / (n_points - 1.);
+		homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
+		monte_carlo_driver(n_measure, n_skip, true, observables, ds, F, dZ);
+		autocorrelations(F, sF.slice(i));
+		for(j = 0; j < n_observables; j++)
+		{
+			coefficients.zeros(n_observables);
+			coefficients(j) = 1.;
+			total_energy(F, dZ, coefficients, E, sE, buf1, buf2);
+			G.slice(j).col(i) = buf1;
+			sG.slice(j).col(i) = buf2;
+			EE(0, i, j) = E;
+			EE(1, i, j) = sE;
+		}
+		std::cout << "done\n";
+		sF.save("sF_t2.bin");
+		G.save(  "G_t2.bin");
+		sG.save("sG_t2.bin");
+		EE.save("E1_t2.bin");
+	}
+	
+
+// 	monte_carlo_driver(n_measure, n_skip, true, observables, ds, F, dZ);
+// 	F.save("F.bin");
+// 	dZ.save("dZ.bin");
+
 }

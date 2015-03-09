@@ -169,7 +169,6 @@ type trace_of_product(const arma::Mat<type> &_M1, const arma::Mat<type> &_M2)
 			buf += M1[i + m * j] * M2[j + ni];
 		}
 	}
-	std::cout << "test trace_of_product: " << buf << " " << trace(_M1 * _M2) << "\n";
 	return buf;
 }
 
@@ -177,16 +176,26 @@ template <class type>
 void eigensystem_variation(const arma::Mat<type> U, const arma::vec w, const arma::Mat<type> V, arma::Mat<type> &dU, arma::vec &dw)
 {
 	unsigned int i, j;
+	double bandwidth;
 	dU = trans(U) * V * U;
 	dw = real(diagvec(dU));
-	
+	bandwidth = arma::max(w) - arma::min(w);
 	for(i = 0; i < dU.n_rows; i++)
 	{
 		dU(i, i) = 0.;
-		for(j = i + 1; i < dU.n_cols; j++)
+		for(j = i + 1; j < dU.n_cols; j++)
 		{
-			dU(i, j) /= w(j) - w(i);
-			dU(j, i) /= w(i) - w(j);
+			if(fabs(w(i) - w(j)) / bandwidth > 1.e-8)
+			{
+				dU(i, j) /= w(j) - w(i);
+				dU(j, i) /= w(i) - w(j);
+			}
+			else
+			{
+// 				if(abs(dU(i, j)) / bandwidth > 1.e-8 || abs(dU(j, i)) / bandwidth > 1.e-8)
+// 					throw std::runtime_error("Perturbation does not share the symmetries of the hamiltonian");
+				dU(i, j) = dU(j, i) = 0.;
+			}
 		}
 	}
 	

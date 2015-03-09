@@ -137,6 +137,45 @@ type fermion_hopping_1(const data_structures<type> &ds)
 		if(ds.is_boson(particles(0)) && ds.is_fermion(particles(2)))
 		{
 			ds.to_p_s(particles(2), p, s);
+			buf += bf_amplitude(edges(0), edges(2), p, s, edges(2), edges(0), ds);
+		}
+		if(ds.is_boson(particles(2)) && ds.is_fermion(particles(0)))
+		{
+			ds.to_p_s(particles(0), p, s);
+			buf += bf_amplitude(edges(2), edges(0), p, s, edges(0), edges(2), ds);
+		}
+		if(ds.is_boson(particles(1)) && ds.is_fermion(particles(3)))
+		{
+			ds.to_p_s(particles(3), p, s);
+			buf += bf_amplitude(edges(1), edges(3), p, s, edges(3), edges(1), ds);
+		}
+		if(ds.is_boson(particles(3)) && ds.is_fermion(particles(1)))
+		{
+			ds.to_p_s(particles(1), p, s);
+			buf += bf_amplitude(edges(3), edges(1), p, s, edges(1), edges(3), ds);
+		}
+	}
+	
+	return buf / (double) ds.n_faces;
+}
+
+template<class type>
+type fermion_hopping_2(const data_structures<type> &ds)
+{
+	unsigned int p, s, f;
+	arma::uvec edges, particles;
+	type buf;
+	
+	buf = 0.;
+	for(f = 0; f < ds.n_faces; f++)
+	{
+		edges = ds.face_edges.col(f);
+		particles = ds.particles(edges);
+		
+		
+		if(ds.is_boson(particles(0)) && ds.is_fermion(particles(2)))
+		{
+			ds.to_p_s(particles(2), p, s);
 			buf += bf_amplitude(edges(0), edges(1), p, s, edges(2), edges(3), ds);
 			buf += bf_amplitude(edges(0), edges(3), p, s, edges(2), edges(1), ds);
 		}
@@ -161,47 +200,6 @@ type fermion_hopping_1(const data_structures<type> &ds)
 	}
 	return buf / (double) ds.n_faces;
 }
-
-
-template<class type>
-type fermion_hopping_2(const data_structures<type> &ds)
-{
-	unsigned int p, s, f;
-	arma::uvec edges, particles;
-	type buf;
-	
-	buf = 0.;
-	for(f = 0; f < ds.n_faces; f++)
-	{
-		edges = ds.face_edges.col(f);
-		particles = ds.particles(edges);
-		
-		
-		if(ds.is_boson(particles(0)) && ds.is_fermion(particles(2)))
-		{
-			ds.to_p_s(particles(2), p, s);
-			buf += bf_amplitude(edges(0), edges(2), p, s, edges(2), edges(0), ds);
-		}
-		if(ds.is_boson(particles(2)) && ds.is_fermion(particles(0)))
-		{
-			ds.to_p_s(particles(0), p, s);
-			buf += bf_amplitude(edges(2), edges(0), p, s, edges(0), edges(2), ds);
-		}
-		if(ds.is_boson(particles(1)) && ds.is_fermion(particles(3)))
-		{
-			ds.to_p_s(particles(3), p, s);
-			buf += bf_amplitude(edges(1), edges(3), p, s, edges(3), edges(1), ds);
-		}
-		if(ds.is_boson(particles(3)) && ds.is_fermion(particles(1)))
-		{
-			ds.to_p_s(particles(1), p, s);
-			buf += bf_amplitude(edges(3), edges(1), p, s, edges(1), edges(3), ds);
-		}
-	}
-	
-	return buf / (double) ds.n_faces;
-}
-
 
 template<class type>
 type fermion_hopping_3(const data_structures<type> &ds)

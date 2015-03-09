@@ -49,7 +49,7 @@ inline arma::uvec set_to_uvec(const std::set<unsigned int> &s)
 	
 	c = 0;
 	for(i = s.begin(); i != s.end(); ++i)
-		v(++c) = *i;
+		v(c++) = *i;
 	return v;
 }
 #endif
