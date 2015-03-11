@@ -1,4 +1,5 @@
 #include <exception>
+#include <iomanip>
 #include "states.h"
 #include "rng.h"
 #include "linear_algebra.h"
@@ -145,18 +146,15 @@ void homogeneous_state(
 	const double pi = 3.141592653589793;
 	unsigned int i, j, c, k, q, L, d;
 	double kk, qq, nm1, nm2, s, Ds, m;
-	arma::cube h, v;
-	arma::mat U, H, wk;
+	arma::cube h, v, psi;
+	arma::mat U, wk, w;
 	arma::vec vbuf;
 	
 	L = ds.L;
 	
 	U = plane_waves(L);
-	ds.w[0].set_size(2 * L * L);
-	ds.psi[0].set_size(2 * L * L, 2 * L * L);
-	ds.Dw[0].set_size(2 * L * L, 5);
-	ds.Dpsi[0].set_size(2 * L * L, 2 * L * L, 5);
-	
+	w.set_size(2 * L * L, 6);
+	psi.zeros(2 * L * L, 2 * L * L, 6);	
 	
 	h.set_size(2, 2, 6);
 	v.set_size(2, 2, 6);
@@ -204,58 +202,67 @@ void homogeneous_state(
 		for(d = 1; d < 6; d++)
 		{
 			eigensystem_variation(v.slice(0), wk.col(0), h.slice(d), v.slice(d), vbuf);
-			v.slice(d) = trans(v.slice(0)) * v.slice(d);
 			wk.col(d) = vbuf;
 		}
 		
 		for(i = 0; i < 4; i++)
 		{
-			vbuf = U.col(j);
-			U.col(j    ) = v(0, 0, 0) * U.col(j) + v(1, 0, 0) * U.col(j + 1);
-			U.col(j + 1) = v(0, 1, 0) * vbuf     + v(1, 1, 0) * U.col(j + 1);
+			nm1 = norm(U.col(j    ), "fro");
+			nm2 = norm(U.col(j + 1), "fro");
 			
-			if(norm(U.col(j), "fro") > 1.e-7)
+			if(nm1 > 1.e-7 && nm2 > 1.e-7)
 			{
-				ds.w[0](c) = wk(0, 0);
-				ds.psi[0].col(c) = arma::conv_to<arma::Col<type> >::from(U.col(j));
-				for(d = 0; d < 5; d++)
+				for(d = 0; d < 6; d++)
 				{
-					ds.Dw[0](c, d) = wk(0, d + 1);
-					vbuf = v(0, 0, d + 1) * U.col(j) + v(1, 0, d + 1) * U.col(j + 1);
-					ds.Dpsi[0].slice(d).col(c) = arma::conv_to<arma::Col<type> >::from(vbuf);
+					w(c    , d) = wk(0, d);
+					w(c + 1, d) = wk(1, d);
+					psi.slice(d).col(c    ) = v(0, 0, d) * U.col(j) + v(1, 0, d) * U.col(j + 1);
+					psi.slice(d).col(c + 1) = v(0, 1, d) * U.col(j) + v(1, 1, d) * U.col(j + 1);
 				}
+				c+=2;
+			}
+			else if(nm1 > 1.e-7)
+			{
+				for(d = 0; d < 6; d++)
+					w(c, d) = h(0, 0, d);
+				psi.slice(0).col(c) = U.col(j);
 				c++;
 			}
-			if(norm(U.col(j + 1), "fro") > 1.e-7)
+			else if(nm2 > 1.e-7)
 			{
-				ds.w[0](c) = wk(1, 0);
-				ds.psi[0].col(c) = arma::conv_to<arma::Col<type> >::from(U.col(j + 1));
-				for(d = 0; d < 5; d++)
-				{
-					ds.Dw[0](c, d) = wk(1, d + 1);
-					vbuf = v(0, 1, d + 1) * U.col(j) + v(1, 1, d + 1) * U.col(j + 1);
-					ds.Dpsi[0].slice(d).col(c) = arma::conv_to<arma::Col<type> >::from(vbuf);
-				}
-				c++; 
+				for(d = 0; d < 6; d++)
+					w(c, d) = h(1, 1, d);
+				psi.slice(0).col(c) = U.col(j + 1);
+				c++;
 			}
 			j+=2;
 		}
 		
 	}
 	
-	s = stddev(ds.w[0]);
-	m = mean(ds.w[0]);
-	for(d = 0; d < 5; d++)
-	{
-		Ds = accu((ds.w[0] - m) % ds.Dw[0].col(d)) / (ds.w[0].n_rows - 1);
-		ds.Dw[0].col(d) = beta * (ds.Dw[0].col(d) / s - ds.w[0] * Ds / s / s / s);
-	}
-	ds.w[0] *= beta / s;
+// 	arma::mat H;
+// 	H = homogeneous_state_hamiltonian(L, dmu, t1, t2, t3, t4);
+// 	for(i = 0; i < H.n_rows; i++)
+// 	{
+// 		vbuf = psi.slice(0).col(i);
+// 		std::cout << std::setw(15) << norm_dot(vbuf, H * vbuf);
+// 		std::cout << std::setw(15) << dot(vbuf, H * vbuf);
+// 		std::cout << std::setw(15) << w(i, 0) << "\n";
+// 	}
 	
-	ds.psi[1] = ds.psi[0];
-	ds.w[1] = ds.w[0];
-	ds.Dpsi[1] = ds.Dpsi[0];
-	ds.Dw[1] = ds.Dw[0];
+	s = stddev(w.col(0));
+	m = mean(w.col(0));
+	for(d = 1; d < 6; d++)
+	{
+		Ds = accu((w.col(0) - m) % w.col(d)) / (w.n_rows - 1);
+		w.col(d) = beta * (w.col(d) / s - w.col(0) * Ds / s / s / s);
+	}
+	w.col(0) *= beta / s;
+	
+	ds.psi[1] = ds.psi[0] = arma::conv_to<arma::Mat<type> >::from(psi.slice(0));
+	ds.w[1] = ds.w[0] = w.col(0);
+	ds.Dpsi[1] = ds.Dpsi[0] = arma::conv_to<arma::Cube<type> >::from(psi.slices(1, 5));
+	ds.Dw[1] = ds.Dw[0] = w.cols(1, 5);
 	ds.phi.ones(2 * L * L);
 	ds.Dphi.zeros(2 * L * L, 5);
 	ds.n_derivatives = 5;

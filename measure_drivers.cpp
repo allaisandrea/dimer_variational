@@ -12,7 +12,8 @@ void monte_carlo_driver(
 	const std::vector< type (*)(const data_structures<type> &ds) > &observables,
 	data_structures<type> &ds,
 	arma::Mat<type> &F,
-	arma::Mat<type> &dZ)
+	arma::Mat<type> &dZ,
+	arma::umat *J)
 {
 	unsigned int i, j, n_thermalize;
 	double dummy;
@@ -34,13 +35,15 @@ void monte_carlo_driver(
 	F.set_size(observables.size(), n_measure);
 	if(measure_gradient)
 		dZ.set_size(ds.n_derivatives, n_measure);
+	J[0].set_size(ds.J[0].n_rows, n_measure);
+	J[1].set_size(ds.J[1].n_rows, n_measure);
 	for(i = 0; i < n_measure; i++)
 	{
 		for(j = 0; j < n_skip + 1; j++)
 		{
 			rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), true, dummy, ds);
-// 			swap_states(0, dummy, ds);
-// 			swap_states(1, dummy, ds);
+			swap_states(0, dummy, ds);
+			swap_states(1, dummy, ds);
 		}
 		if(measure_gradient)
 		{
@@ -51,6 +54,8 @@ void monte_carlo_driver(
 		{
 			F(j, i) = observables[j](ds);
 		}
+		J[0].col(i) = ds.J[0];
+		J[1].col(i) = ds.J[1];
 	}
 }
 
@@ -147,7 +152,8 @@ void monte_carlo_driver<double>(
 	const std::vector< double (*)(const data_structures<double> &ds) > &observables,
 	data_structures<double> &ds,
 	arma::Mat<double> &F,
-	arma::Mat<double> &dZ);
+	arma::Mat<double> &dZ,
+	arma::umat *J);
 
 template
 void monte_carlo_driver<arma::cx_double>(
@@ -157,7 +163,8 @@ void monte_carlo_driver<arma::cx_double>(
 	const std::vector< arma::cx_double (*)(const data_structures<arma::cx_double> &ds) > &observables,
 	data_structures<arma::cx_double> &ds,
 	arma::Mat<arma::cx_double> &F,
-	arma::Mat<arma::cx_double> &dZ);
+	arma::Mat<arma::cx_double> &dZ,
+	arma::umat *J);
 
 
 template

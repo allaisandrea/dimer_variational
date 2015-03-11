@@ -15,7 +15,8 @@ void monte_carlo_driver(
 	const std::vector< type (*)(const data_structures<type> &ds) > &observables,
 	data_structures<type> &ds,
 	arma::Mat<type> &F,
-	arma::Mat<type> &dZ);
+	arma::Mat<type> &dZ,
+	arma::umat *J);
 
 template <class type>
 void autocorrelations(const arma::Mat<type> &F, arma::mat &sF);

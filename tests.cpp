@@ -563,7 +563,7 @@ void test_homogeneous_state_derivatives()
 	
 	for(i = 0; i < 5; i++)
 	{
-		tt << 0. << 0.2 << 0.3 << 0.2 << 0.1;
+		tt << 0. << 1. << 0.2 << 0.0 << 1.0;
 		
 		homogeneous_state(tt(0), tt(1), tt(2), tt(3), tt(4), beta, ds);
 		for(s = 0; s < 2; s++)
@@ -616,8 +616,15 @@ void test_homogeneous_state_derivatives()
 		
 		std::cout << norm(Dw[0] - Dw_approx[0], "fro") << "\n";
 		std::cout << norm(Dw[1] - Dw_approx[1], "fro") << "\n";
-		std::cout << norm(Dpsi_approx[0] - Dpsi[0], "fro") <<  "\n";
+		std::cout << norm(Dpsi_approx[0] - Dpsi[0], "fro") << "\n";
 		std::cout << norm(Dpsi_approx[1] - Dpsi[1], "fro") << "\n";
+		
+// 		for(j = 0; j < Dpsi[0].n_cols; j++)
+// 		{
+// 			std::cout << norm(Dpsi_approx[0].col(j) - Dpsi[0].col(j), "fro") << "\n";
+// 			std::cout << join_rows(Dpsi_approx[0].col(j), Dpsi[0].col(j)) <<  "\n";
+// 		}
+		
 		std::cout << "\n";
 	}
 }
@@ -625,10 +632,11 @@ void test_homogeneous_state_derivatives()
 
 void test_monte_carlo_driver()
 {
-	unsigned int i, j, n_measure = 100, n_skip = 10000, n_points = 20, n_observables;
-	double dmu = 0, t1 = 1., t2 = 0, t3 = 0, t4 = 0.5, beta = 100.;
+	unsigned int i, j, n_measure = 1000, n_skip = 10000, n_points = 20, n_observables;
+	double dmu = 0, t1 = 1., t2 = 0, t3 = 0, t4 = 0.5, beta = 10.;
 	double E, sE;
 	arma::mat F, dZ;
+	arma::umat J[2];
 	arma::cube sF;
 	arma::cube G, sG, EE;
 	data_structures<double> ds;
@@ -660,7 +668,7 @@ void test_monte_carlo_driver()
 		std::cout << "point " << i + 1 << "..." << std::endl;
 		t2 = -1. +  2. * i / (n_points - 1.);
 		homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
-		monte_carlo_driver(n_measure, n_skip, true, observables, ds, F, dZ);
+		monte_carlo_driver(n_measure, n_skip, true, observables, ds, F, dZ, J);
 		autocorrelations(F, sF.slice(i));
 		for(j = 0; j < n_observables; j++)
 		{
@@ -673,10 +681,10 @@ void test_monte_carlo_driver()
 			EE(1, i, j) = sE;
 		}
 		std::cout << "done\n";
-		sF.save("sF_t2.bin");
-		G.save(  "G_t2.bin");
-		sG.save("sG_t2.bin");
-		EE.save("E1_t2.bin");
+		sF.save("sF_t2_beta.bin");
+		G.save(  "G_t2_beta.bin");
+		sG.save("sG_t2_beta.bin");
+		EE.save("E1_t2_beta.bin");
 	}
 	
 
@@ -684,4 +692,42 @@ void test_monte_carlo_driver()
 // 	F.save("F.bin");
 // 	dZ.save("dZ.bin");
 
+}
+
+
+void test_states_autocorrelation()
+{
+	unsigned int i, j, n_measure = 200, n_skip = 1000, n_points = 20, n_observables;
+	double dmu = 0, t1 = 1., t2 = 0.2, t3 = 0, t4 = 1., beta = 50.;
+	double E, sE;
+	arma::mat F, dZ;
+	arma::umat J[2];
+	data_structures<double> ds;
+	observables_vector_real observables;
+	arma::vec coefficients, buf1, buf2;
+	
+	
+	
+	ds.L = 10;
+	ds.Nf[0] = 20;
+	ds.Nf[1] = 20;
+	
+	observables.push_back(&boson_hopping);
+// 	observables.push_back(&boson_potential);
+	observables.push_back(&fermion_hopping_1);
+	observables.push_back(&fermion_hopping_2);
+	observables.push_back(&fermion_hopping_3);
+	n_observables = observables.size();
+	
+	build_graph(ds);
+
+	rng::seed(1);
+
+	
+	homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
+	monte_carlo_driver(n_measure, n_skip, true, observables, ds, F, dZ, J);
+
+	J[0].save("Ju.bin");
+	J[1].save("Jd.bin");
+	ds.w[0].save("w.bin");
 }
