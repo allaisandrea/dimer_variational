@@ -6,6 +6,8 @@ extern "C"{
 	void dorgqr_(int *, int*, int*, double*, int*, double*, double*, int*, int*);
 	void zgeqp3_(int*, int*, double*, int* m, int*, double*, double*, int*, double*, int*);
 	void zungqr_(int *, int*, int*, double*, int*, double*, double*, int*, int*);
+	void dger_(int*, int*, const double*, const double*, int *, const double*, int*, double*, int*);
+	void zgeru_(int*, int*, const arma::cx_double*, const arma::cx_double*, int *, const arma::cx_double*, int*, arma::cx_double*, int*);
 }
 
 void pivoting_qr_decomposition(arma::mat &A, arma::mat &Q, arma::uvec &perm)
@@ -112,6 +114,33 @@ bool singular(const arma::Mat<type> &M)
 	return false;
 }
 
+template 
+bool singular<double>(const arma::Mat<double> &M);
+template 
+bool singular<arma::cx_double>(const arma::Mat<arma::cx_double> &M);
+
+void rank_1_update(double a, const arma::Col<double> &U, const arma::Row<double>&V, arma::Mat<double>& A)
+{
+	int m, n, inc = 1;
+	if(U.n_rows != A.n_rows || V.n_cols != A.n_cols)
+		throw std::logic_error("Incorrect matrix dimensions");
+	m = U.n_rows;
+	n = V.n_cols;
+	
+	dger_(&m, &n, &a, U.memptr(), &inc, V.memptr(), &inc, A.memptr(), &m); 
+}
+
+void rank_1_update(arma::cx_double a, const arma::Mat<arma::cx_double> &U, const arma::Mat<arma::cx_double>&V, arma::Mat<arma::cx_double>& A)
+{
+	int m, n, inc = 1;
+	if(U.n_rows != A.n_rows || V.n_cols != A.n_cols)
+		throw std::logic_error("Incorrect matrix dimensions");
+	m = U.n_rows;
+	n = V.n_cols;
+	
+	zgeru_(&m, &n, &a, U.memptr(), &inc, V.memptr(), &inc, A.memptr(), &m);
+}
+
 
 template<class type>
 void rank_k_update(type a, const arma::Mat<type> &_U, const arma::Mat<type>&_V, arma::Mat<type>& _A)
@@ -145,6 +174,12 @@ void rank_k_update(type a, const arma::Mat<type> &_U, const arma::Mat<type>&_V, 
 
 }
 
+template
+void rank_k_update<double>(double a, const arma::Mat<double> &_U, const arma::Mat<double>&_V, arma::Mat<double>& _A);
+template
+void rank_k_update<arma::cx_double>(arma::cx_double a, const arma::Mat<arma::cx_double> &_U, const arma::Mat<arma::cx_double>&_V, arma::Mat<arma::cx_double>& _A);
+
+
 template <class type>
 type trace_of_product(const arma::Mat<type> &_M1, const arma::Mat<type> &_M2)
 {
@@ -171,6 +206,12 @@ type trace_of_product(const arma::Mat<type> &_M1, const arma::Mat<type> &_M2)
 	}
 	return buf;
 }
+
+template 
+double trace_of_product<double>(const arma::Mat<double> &_M1, const arma::Mat<double> &_M2);
+template 
+arma::cx_double trace_of_product<arma::cx_double>(const arma::Mat<arma::cx_double> &_M1, const arma::Mat<arma::cx_double> &_M2);
+
 
 template <class type>
 void eigensystem_variation(const arma::Mat<type> U, const arma::vec w, const arma::Mat<type> V, arma::Mat<type> &dU, arma::vec &dw)
@@ -203,26 +244,236 @@ void eigensystem_variation(const arma::Mat<type> U, const arma::vec w, const arm
 	
 }
 
-template 
-bool singular<double>(const arma::Mat<double> &M);
-
-template 
-bool singular<arma::cx_double>(const arma::Mat<arma::cx_double> &M);
-
-template
-void rank_k_update<double>(double a, const arma::Mat<double> &_U, const arma::Mat<double>&_V, arma::Mat<double>& _A);
-
-template
-void rank_k_update<arma::cx_double>(arma::cx_double a, const arma::Mat<arma::cx_double> &_U, const arma::Mat<arma::cx_double>&_V, arma::Mat<arma::cx_double>& _A);
-
-template 
-double trace_of_product<double>(const arma::Mat<double> &_M1, const arma::Mat<double> &_M2);
-
-template 
-arma::cx_double trace_of_product<arma::cx_double>(const arma::Mat<arma::cx_double> &_M1, const arma::Mat<arma::cx_double> &_M2);
-
 template
 void eigensystem_variation<double>(const arma::Mat<double> U, const arma::vec w, const arma::Mat<double> V, arma::Mat<double> &dU, arma::vec &dw);
-
 template
 void eigensystem_variation<arma::cx_double>(const arma::Mat<arma::cx_double> U, const arma::vec w, const arma::Mat<arma::cx_double> V, arma::Mat<arma::cx_double> &dU, arma::vec &dw);
+
+
+template<class type>
+void copy_line(type c1, type c2, unsigned int m, unsigned int ldA, const type * A, unsigned int ldB, type* B)
+{
+	unsigned int a;
+
+	if(c1 == (type) 1)
+	{
+		if(c2 == (type) 1)
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  += A[a * ldA];
+			}
+		}
+		else if(c2 == (type) -1)
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  -= A[a * ldA];
+			}
+		}
+		else
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  +=  c2 * A[a * ldA];
+			}
+		}
+	}
+	else if(c1 == (type) 0)
+	{
+		if(c2 == (type) 1)
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = A[a * ldA];
+			}
+		}
+		else if(c2 == (type) -1)
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = -A[a * ldA];
+			}
+		}
+		else
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = c2 * A[a * ldA];
+			}
+		}
+	}
+	else if(c1 == (type) -1)
+	{
+		if(c2 == (type) 1)
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = - B[a * ldB] + A[a * ldA];
+			}
+		}
+		else if(c2 == (type) -1)
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = - B[a * ldB] - A[a * ldA];
+			}
+		}
+		else
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = - B[a * ldB] + c2 * A[a * ldA];
+			}
+		}
+	}
+	else
+	{
+		if(c2 == (type) 1)
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = c1 * B[a * ldB] + A[a * ldA];
+			}
+		}
+		else if(c2 == (type) -1)
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = c1 * B[a * ldB] - A[a * ldA];
+			}
+		}
+		else
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = c1 * B[a * ldB] + c2 * A[a * ldA];
+			}
+		}
+	}
+}
+
+template
+void copy_line<unsigned int>(unsigned int c1, unsigned int c2, unsigned int m, unsigned int ldA, const unsigned int * A, unsigned int ldB, unsigned int* B);
+template
+void copy_line<double>(double c1, double c2, unsigned int m, unsigned int ldA, const double * A, unsigned int ldB, double* B);
+template
+void copy_line<arma::cx_double>(arma::cx_double c1, arma::cx_double c2, unsigned int m, unsigned int ldA, const arma::cx_double * A, unsigned int ldB, arma::cx_double* B);
+
+template<class type>
+void copy_line_sparse(type c1, type c2, unsigned int m, const unsigned int *j, unsigned int ldA, const type * A, unsigned int ldB, type* B)
+{
+	unsigned int a;
+
+	if(c1 == (type) 1)
+	{
+		if(c2 == (type) 1)
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  += A[j[a] * ldA];
+			}
+		}
+		else if(c2 == (type) -1)
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  -= A[j[a] * ldA];
+			}
+		}
+		else
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  +=  c2 * A[j[a] * ldA];
+			}
+		}
+	}
+	else if(c1 == (type) 0)
+	{
+		if(c2 == (type) 1)
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = A[j[a] * ldA];
+			}
+		}
+		else if(c2 == (type) -1)
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = -A[j[a] * ldA];
+			}
+		}
+		else
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = c2 * A[j[a] * ldA];
+			}
+		}
+	}
+	else if(c1 == (type) -1)
+	{
+		if(c2 == (type) 1)
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = - B[a * ldB] + A[j[a] * ldA];
+			}
+		}
+		else if(c2 == (type) -1)
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = - B[a * ldB] - A[j[a] * ldA];
+			}
+		}
+		else
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = - B[a * ldB] + c2 * A[j[a] * ldA];
+			}
+		}
+	}
+	else
+	{
+		if(c2 == (type) 1)
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = c1 * B[a * ldB] + A[j[a] * ldA];
+			}
+		}
+		else if(c2 == (type) -1)
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = c1 * B[a * ldB] - A[j[a] * ldA];
+			}
+		}
+		else
+		{
+			for(a = 0; a < m; a++)
+			{
+				B[a * ldB]  = c1 * B[a * ldB] + c2 * A[j[a] * ldA];
+			}
+		}
+	}
+	
+}
+
+template
+void copy_line_sparse<unsigned int>(unsigned int c1, unsigned int c2, unsigned int m, const unsigned int *j, unsigned int ldA, const unsigned int * A, unsigned int ldB, unsigned int* B);
+template
+void copy_line_sparse<double>(double c1, double c2, unsigned int m, const unsigned int *j, unsigned int ldA, const double * A, unsigned int ldB, double* B);
+template
+void copy_line_sparse<arma::cx_double>(arma::cx_double c1, arma::cx_double c2, unsigned int m, const unsigned int *j, unsigned int ldA, const arma::cx_double * A, unsigned int ldB, arma::cx_double* B);
+
+
+
+
+
+
+

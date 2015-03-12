@@ -88,48 +88,50 @@ unsigned int rotate_face(
 	double &amp,
 	data_structures<type> &ds)
 {
-	arma::uvec particles, edge;
-	edge = ds.face_edges.col(f);
-	particles = ds.particles(edge);
-	if(particles(0) == 0 && particles(2) == 0)
+	static unsigned int particles[4], edge[4];
+	
+	copy_line((unsigned int) 0, (unsigned int) 1, 4, 1, ds.face_edges.memptr() + 4 * f, 1, edge);
+	copy_line_sparse((unsigned int) 0, (unsigned int) 1, 4, edge, 1, ds.particles.memptr(), 1, particles);
+	
+	if(particles[0] == 0 && particles[2] == 0)
 	{
-		if     (particles(1) == 1 && particles(3) == 1)
-			return rotate_face_bb(edge(1), edge(2), edge(3), edge(0), step, amp, ds);
-		else if(particles(1) == 1 && particles(3) >= 2)
+		if     (particles[1] == 1 && particles[3] == 1)
+			return rotate_face_bb(edge[1], edge[2], edge[3], edge[0], step, amp, ds);
+		else if(particles[1] == 1 && particles[3] >= 2)
 			if(clockwise)
-				return rotate_face_bf(edge(1), edge(0), edge(3), edge(2), step, amp, ds);
+				return rotate_face_bf(edge[1], edge[0], edge[3], edge[2], step, amp, ds);
 			else
-				return rotate_face_bf(edge(1), edge(2), edge(3), edge(0), step, amp, ds);
-		else if(particles(1) >= 2 && particles(3) == 1)
+				return rotate_face_bf(edge[1], edge[2], edge[3], edge[0], step, amp, ds);
+		else if(particles[1] >= 2 && particles[3] == 1)
 			if(clockwise)
-				return rotate_face_bf(edge(3), edge(2), edge(1), edge(0), step, amp, ds);
+				return rotate_face_bf(edge[3], edge[2], edge[1], edge[0], step, amp, ds);
 			else
-				return rotate_face_bf(edge(3), edge(0), edge(1), edge(2), step, amp, ds);
-		else if(particles(1) >= 2 && particles(3) >= 2)
+				return rotate_face_bf(edge[3], edge[0], edge[1], edge[2], step, amp, ds);
+		else if(particles[1] >= 2 && particles[3] >= 2)
 			if(clockwise)
-				return rotate_face_ff(edge(1), edge(0), edge(3), edge(2), step, amp, ds);
+				return rotate_face_ff(edge[1], edge[0], edge[3], edge[2], step, amp, ds);
 			else
-				return rotate_face_ff(edge(1), edge(2), edge(3), edge(0), step, amp, ds);
+				return rotate_face_ff(edge[1], edge[2], edge[3], edge[0], step, amp, ds);
 	}
-	else if(particles(1) == 0 && particles(3) == 0)
+	else if(particles[1] == 0 && particles[3] == 0)
 	{
-		if     (particles(0) == 1 && particles(2) == 1)
-			return rotate_face_bb(edge(0), edge(1), edge(2), edge(3), step, amp, ds);
-		else if(particles(0) == 1 && particles(2) >= 2)
+		if     (particles[0] == 1 && particles[2] == 1)
+			return rotate_face_bb(edge[0], edge[1], edge[2], edge[3], step, amp, ds);
+		else if(particles[0] == 1 && particles[2] >= 2)
 			if(clockwise)
-				return rotate_face_bf(edge(0), edge(3), edge(2), edge(1), step, amp, ds);
+				return rotate_face_bf(edge[0], edge[3], edge[2], edge[1], step, amp, ds);
 			else
-				return rotate_face_bf(edge(0), edge(1), edge(2), edge(3), step, amp, ds);
-		else if(particles(0) >= 2 && particles(2) == 1)
+				return rotate_face_bf(edge[0], edge[1], edge[2], edge[3], step, amp, ds);
+		else if(particles[0] >= 2 && particles[2] == 1)
 			if(clockwise)
-				return rotate_face_bf(edge(2), edge(1), edge(0), edge(3), step, amp, ds);
+				return rotate_face_bf(edge[2], edge[1], edge[0], edge[3], step, amp, ds);
 			else
-				return rotate_face_bf(edge(2), edge(3), edge(0), edge(1), step, amp, ds);
-		else if(particles(0) >= 2 && particles(2) >= 2)
+				return rotate_face_bf(edge[2], edge[3], edge[0], edge[1], step, amp, ds);
+		else if(particles[0] >= 2 && particles[2] >= 2)
 			if(clockwise)
-				return rotate_face_ff(edge(0), edge(3), edge(2), edge(1), step, amp, ds);
+				return rotate_face_ff(edge[0], edge[3], edge[2], edge[1], step, amp, ds);
 			else
-				return rotate_face_ff(edge(0), edge(1), edge(2), edge(3), step, amp, ds);
+				return rotate_face_ff(edge[0], edge[1], edge[2], edge[3], step, amp, ds);
 	}
 	
 	return 0;
@@ -159,10 +161,7 @@ unsigned int rotate_face_bb(
 	{
 		amp = abs_squared(ds.phi(destination1) * ds.phi(destination2) / ds.phi(origin1) / ds.phi(origin2));
 		if(amp > rng::uniform())
-		{
-// 			std::cout << std::setw(12) << amp;
 			accept = true;
-		}
 	}
 	if(!step || accept)
 	{
@@ -170,10 +169,6 @@ unsigned int rotate_face_bb(
 		ds.particles(destination2) = ds.particles(origin2);
 		ds.particles(origin1) = 0;
 		ds.particles(origin2) = 0;
-		ds.boson_edges.erase(origin1);
-		ds.boson_edges.erase(origin2);
-		ds.boson_edges.insert(destination1);
-		ds.boson_edges.insert(destination2);
 		return 1;
 	}
 	return 0;
@@ -197,9 +192,8 @@ unsigned int rotate_face_bf(
 	unsigned int p, s;
 	
 	type det;
-	arma::uvec e;
-	arma::Col<type> U;
-	arma::Row<type> V, buf;
+	static arma::Col<type> U[2];
+	static arma::Row<type> V[2], buf;
 	
 	p = ds.particles(origin2) - 2;
 	
@@ -214,35 +208,33 @@ unsigned int rotate_face_bf(
 		s = 1;
 	}
 	
-	e << destination2;
-	V = ds.psi[s](e, ds.J[s]);
-	e << origin2;
-	V -= ds.psi[s](e, ds.J[s]);
+	V[s].set_size(ds.Nf[s]);
+	copy_line_sparse((type) 0., (type) +1., ds.Nf[s], ds.J[s].memptr(), ds.psi[s].n_rows, ds.psi[s].memptr() + destination2, 1, V[s].memptr());
+	copy_line_sparse((type) 1., (type) -1., ds.Nf[s], ds.J[s].memptr(), ds.psi[s].n_rows, ds.psi[s].memptr() + origin2, 1, V[s].memptr());
 	
 	if(step)
 	{
-		U = ds.Mi[s].col(p);
+		U[s].set_size(ds.Nf[s]);
+		copy_line((type) 0., (type) 1., ds.Nf[s], 1, ds.Mi[s].colptr(p), 1, U[s].memptr());
 		
-		det = 1. + dot(V, U);
+		det = 1. + dot(V[s], U[s]);
 		amp = abs_squared(det * ds.phi(destination1) / ds.phi(origin1));
 		if(amp > rng::uniform())
 		{
 			accept = true;
-			buf = V * ds.Mi[s];
-			rank_k_update(-1. / det, U, buf, ds.Mi[s]);
+			buf = V[s] * ds.Mi[s];
+			rank_1_update(-1. / det, U[s], buf, ds.Mi[s]);
 		}
 
 	}
 	if(!step || accept)
 	{
-		ds.M[s].row(p) += V;
+		copy_line((type) 1., (type) 1., ds.Nf[s], 1, V[s].memptr(), ds.Nf[s], ds.M[s].memptr() + p);
 		ds.particles(destination1) = ds.particles(origin1);
 		ds.particles(destination2) = ds.particles(origin2);
 		ds.particles(origin1) = 0;
 		ds.particles(origin2) = 0;
 		ds.fermion_edge[s](p) = destination2;
-		ds.boson_edges.erase(origin1);
-		ds.boson_edges.insert(destination1);
 		return 2;
 	}
 	return 0;
@@ -266,8 +258,9 @@ unsigned int rotate_face_ff(
 	bool accept = false;
 	unsigned int p1, p2,  s1, s2, return_value;
 	type det[2];
-	arma::Mat<type> U[2], V[2], K, buf;
-	arma::uvec e;
+	static arma::Mat<type> U2[2], V2[2], K, buf;
+	static arma::Row<type> V[2];
+	static arma::Col<type> U[2];
 	
 	p1 = ds.particles(origin1) - 2;
 	p2 = ds.particles(origin2) - 2;
@@ -296,54 +289,56 @@ unsigned int rotate_face_ff(
 
 	if(s1 == s2)
 	{
+		V2[s1].set_size(2, ds.Nf[s1]);
 		
-		e << destination1 << destination2;
-		V[s1] = ds.psi[s1](e, ds.J[s1]);
-		e << origin1 << origin2;
-		V[s1] -= ds.psi[s1](e, ds.J[s1]);
-			
+		copy_line_sparse((type) 0., (type) +1., ds.Nf[s1], ds.J[s1].memptr(), ds.psi[s1].n_rows, ds.psi[s1].memptr() + destination1, 2, V2[s1].memptr());
+		copy_line_sparse((type) 1., (type) -1., ds.Nf[s1], ds.J[s1].memptr(), ds.psi[s1].n_rows, ds.psi[s1].memptr() + origin1,      2, V2[s1].memptr());
+		
+		copy_line_sparse((type) 0., (type) +1., ds.Nf[s1], ds.J[s1].memptr(), ds.psi[s1].n_rows, ds.psi[s1].memptr() + destination2, 2, V2[s1].memptr() + 1);
+		copy_line_sparse((type) 1., (type) -1., ds.Nf[s1], ds.J[s1].memptr(), ds.psi[s1].n_rows, ds.psi[s1].memptr() + origin2     , 2, V2[s1].memptr() + 1);
+				
 		if(step)
 		{
-			e << p1 << p2;
-			U[s1] = ds.Mi[s1].cols(e);
+			U2[s1].set_size(ds.Nf[s1], 2);
+			copy_line((type) 0., (type) 1., ds.Nf[s1], 1, ds.Mi[s1].colptr(p1), 1, U2[s1].colptr(0));
+			copy_line((type) 0., (type) 1., ds.Nf[s1], 1, ds.Mi[s1].colptr(p2), 1, U2[s1].colptr(1));
 			
-			K = V[s1] * U[s1];
-			K(0, 0) += 1;
-			K(1, 1) += 1;
-			det[s1] = K(0, 0) * K(1, 1) - K(0, 1) * K(1, 0);
+			K = V2[s1] * U2[s1];
+			K[0] += 1.;
+			K[3] += 1.;
+			det[s1] = K[0] * K[3] - K[1] * K[2];
 			amp = abs_squared(det[s1]);
 			if(amp > rng::uniform())
 			{
 				accept = true;
-				buf = V[s1] * ds.Mi[s1];
+				buf = V2[s1] * ds.Mi[s1];
 				buf = inv(K) * buf;
-				rank_k_update((type)-1., U[s1], buf, ds.Mi[s1]);
+				rank_k_update((type)-1., U2[s1], buf, ds.Mi[s1]);
 			}
 		}
 		if(!step || accept)
 		{
 			return_value = 3;
-			ds.M[s1].row(p1) += V[s1].row(0);
-			ds.M[s2].row(p2) += V[s1].row(1);
+			copy_line((type) 1., (type) 1., ds.Nf[s1], 2, V2[s1].memptr() + 0, ds.Nf[s1], ds.M[s1].memptr() + p1);
+			copy_line((type) 1., (type) 1., ds.Nf[s1], 2, V2[s1].memptr() + 1, ds.Nf[s1], ds.M[s1].memptr() + p2);
 		}
 	}
 	else
 	{
+		V[s1].set_size(ds.Nf[s1]);
+		copy_line_sparse((type) 0., (type) +1., ds.Nf[s1], ds.J[s1].memptr(), ds.psi[s1].n_rows, ds.psi[s1].memptr() + destination1, 1, V[s1].memptr());
+		copy_line_sparse((type) 1., (type) -1., ds.Nf[s1], ds.J[s1].memptr(), ds.psi[s1].n_rows, ds.psi[s1].memptr() + origin1,      1, V[s1].memptr());
 		
-		e << destination1;
-		V[s1] =  ds.psi[s1](e, ds.J[s1]);
-		e << origin1;
-		V[s1] -= ds.psi[s1](e, ds.J[s1]);
-		
-		e << destination2;
-		V[s2] =  ds.psi[s2](e, ds.J[s2]);
-		e << origin2;
-		V[s2] -= ds.psi[s2](e, ds.J[s2]);
+		V[s2].set_size(ds.Nf[s2]);
+		copy_line_sparse((type) 0., (type) +1., ds.Nf[s2], ds.J[s2].memptr(), ds.psi[s2].n_rows, ds.psi[s2].memptr() + destination2, 1, V[s2].memptr());
+		copy_line_sparse((type) 1., (type) -1., ds.Nf[s2], ds.J[s2].memptr(), ds.psi[s2].n_rows, ds.psi[s2].memptr() + origin2,      1, V[s2].memptr());
 		
 		if(step)
 		{
-			U[s1] = ds.Mi[s1].col(p1);
-			U[s2] = ds.Mi[s2].col(p2);
+			U[s1].set_size(ds.Nf[s1]);
+			copy_line((type) 0., (type) 1., ds.Nf[s1], 1, ds.Mi[s1].colptr(p1), 1, U[s1].memptr());
+			U[s2].set_size(ds.Nf[s2]);
+			copy_line((type) 0., (type) 1., ds.Nf[s2], 1, ds.Mi[s2].colptr(p2), 1, U[s2].memptr());
 			
 			det[s1] = 1. + dot(V[s1], U[s1]);
 			det[s2] = 1. + dot(V[s2], U[s2]);
@@ -360,8 +355,9 @@ unsigned int rotate_face_ff(
 		}
 		if(!step || accept)
 		{
-			ds.M[s1].row(p1) += V[s1];
-			ds.M[s2].row(p2) += V[s2];
+			return_value = 4;
+			copy_line((type) 1., (type) 1., ds.Nf[s1], 1, V[s1].memptr(), ds.Nf[s1], ds.M[s1].memptr() + p1);
+			copy_line((type) 1., (type) 1., ds.Nf[s2], 1, V[s2].memptr(), ds.Nf[s2], ds.M[s2].memptr() + p2);
 		}
 	}
 	
@@ -418,6 +414,7 @@ bool swap_states(unsigned int s, double& amp, data_structures<type> & ds)
 	arma::Col<type> U, buf;
 	arma::Row<type> V;
 	
+
 	if(ds.Nf[s] > 0 && apriori_swap_proposal(ds.w[s], ds.J[s], ds.K[s], io, ie))
 	{
 		
@@ -431,6 +428,7 @@ bool swap_states(unsigned int s, double& amp, data_structures<type> & ds)
 		V = ds.Mi[s].row(io);
 		
 		det = 1. + dot(V, U);
+		
 		amp = abs_squared(det);
 		if(amp > rng::uniform())
 		{

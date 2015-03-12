@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <map>
+#include <ctime>
 #include "data_structures.h"
 #include "states.h"
 #include "monte_carlo.h"
@@ -156,11 +157,11 @@ void test_edge_assignment(const data_structures<type>& ds)
 	std::set<unsigned int> fe[2];
 	std::set<unsigned int>::iterator ee;
 	
-	for(ee = ds.boson_edges.begin(); ee != ds.boson_edges.end(); ++ee)
-	{
-		if(ds.particles(*ee) != 1)
-			std::cout << "test_edge_assignment error\n";
-	}
+// 	for(ee = ds.boson_edges.begin(); ee != ds.boson_edges.end(); ++ee)
+// 	{
+// 		if(ds.particles(*ee) != 1)
+// 			std::cout << "test_edge_assignment error\n";
+// 	}
 	
 	for(s = 0; s < 2; s++)
 	for(p = 0; p < ds.Nf[s]; p++)
@@ -178,8 +179,8 @@ void test_edge_assignment(const data_structures<type>& ds)
 		p = ds.particles(e);
 		if(p == 0)
 		{
-			if(ds.boson_edges.find(e) != ds.boson_edges.end())
-				std::cout << "test_edge_assignment error\n";
+// 			if(ds.boson_edges.find(e) != ds.boson_edges.end())
+// 				std::cout << "test_edge_assignment error\n";
 			if(fe[0].find(e) != fe[0].end())
 				std::cout << "test_edge_assignment error\n";
 			if(fe[1].find(e) != fe[1].end())
@@ -187,8 +188,8 @@ void test_edge_assignment(const data_structures<type>& ds)
 		}
 		else if(p == 1)
 		{
-			if(ds.boson_edges.find(e) == ds.boson_edges.end())
-				std::cout << "test_edge_assignment error\n";
+// 			if(ds.boson_edges.find(e) == ds.boson_edges.end())
+// 				std::cout << "test_edge_assignment error\n";
 			if(fe[0].find(e) != fe[0].end())
 				std::cout << "test_edge_assignment error\n";
 			if(fe[1].find(e) != fe[1].end())
@@ -203,8 +204,8 @@ void test_edge_assignment(const data_structures<type>& ds)
 				p-= ds.Nf[0];
 				s = 1;
 			}
-			if(ds.boson_edges.find(e) != ds.boson_edges.end())
-				std::cout << "test_edge_assignment error\n";
+// 			if(ds.boson_edges.find(e) != ds.boson_edges.end())
+// 				std::cout << "test_edge_assignment error\n";
 			if(ds.fermion_edge[s](p) != e)
 				std::cout << "test_edge_assignment error\n";
 		}
@@ -668,7 +669,7 @@ void test_monte_carlo_driver()
 		std::cout << "point " << i + 1 << "..." << std::endl;
 		t2 = -1. +  2. * i / (n_points - 1.);
 		homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
-		monte_carlo_driver(n_measure, n_skip, true, observables, ds, F, dZ, J);
+		monte_carlo_driver(n_measure, n_skip, true, true, observables, ds, F, dZ, J);
 		autocorrelations(F, sF.slice(i));
 		for(j = 0; j < n_observables; j++)
 		{
@@ -697,8 +698,8 @@ void test_monte_carlo_driver()
 
 void test_states_autocorrelation()
 {
-	unsigned int i, j, n_measure = 200, n_skip = 1000, n_points = 20, n_observables;
-	double dmu = 0, t1 = 1., t2 = 0.2, t3 = 0, t4 = 1., beta = 50.;
+	unsigned int i, j, n_measure = 20000, n_skip = 1000, n_points = 20, n_observables, start_time;
+	double dmu = 0, t1 = 1., t2 = 0.01, t3 = 0, t4 = 1., beta = 50.;
 	double E, sE;
 	arma::mat F, dZ;
 	arma::umat J[2];
@@ -708,9 +709,9 @@ void test_states_autocorrelation()
 	
 	
 	
-	ds.L = 10;
-	ds.Nf[0] = 20;
-	ds.Nf[1] = 20;
+	ds.L = 24;
+	ds.Nf[0] = 29;
+	ds.Nf[1] = 29;
 	
 	observables.push_back(&boson_hopping);
 // 	observables.push_back(&boson_potential);
@@ -725,9 +726,47 @@ void test_states_autocorrelation()
 
 	
 	homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
-	monte_carlo_driver(n_measure, n_skip, true, observables, ds, F, dZ, J);
-
+	start_time = std::clock();
+	monte_carlo_driver(n_measure, n_skip, true, false, observables, ds, F, dZ, J);
+	std::cout << 1. * (std::clock() - start_time) / CLOCKS_PER_SEC << "\n";
 	J[0].save("Ju.bin");
 	J[1].save("Jd.bin");
 	ds.w[0].save("w.bin");
+}
+
+extern "C"{
+	void dger_(int*, int*, double*, double*, int *, double*, int*, double*, int*);
+}
+
+void test_rank_1_update()
+{
+	arma::mat M;
+	arma::rowvec v;
+	arma::colvec u;
+	
+	int i, start_time, m = 100000, n = 20, inc = 1;
+	double alpha = 1.5;
+	M.randn(n, n);
+	v.randn(n);
+	u.randn(n);
+	start_time = std:: clock();
+	for(i = 0; i < m; i++)
+	{
+		M * u;
+	}
+	std::cout << 1. * (std::clock() - start_time) / CLOCKS_PER_SEC << "\n";
+	
+	start_time = std:: clock();
+	for(i = 0; i < m; i++)
+	{
+		dger_(&n, &n, &alpha, v.memptr(), &inc, u.memptr(), &inc, M.memptr(), &n);
+	}
+	std::cout << 1. * (std::clock() - start_time) / CLOCKS_PER_SEC << "\n";
+	
+	start_time = std:: clock();
+	for(i = 0; i < m; i++)
+	{
+		rank_1_update(alpha, u, v, M);
+	}
+	std::cout << 1. * (std::clock() - start_time) / CLOCKS_PER_SEC << "\n";
 }

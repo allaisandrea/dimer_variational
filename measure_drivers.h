@@ -12,6 +12,7 @@ void monte_carlo_driver(
 	unsigned int n_measure,
 	unsigned int n_skip,
 	bool measure_gradient,
+	bool shuffle_states,
 	const std::vector< type (*)(const data_structures<type> &ds) > &observables,
 	data_structures<type> &ds,
 	arma::Mat<type> &F,

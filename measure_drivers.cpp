@@ -1,4 +1,5 @@
 #include <vector>
+#include <ctime>
 #include "rng.h"
 #include "data_structures.h"
 #include "monte_carlo.h"
@@ -9,26 +10,34 @@ void monte_carlo_driver(
 	unsigned int n_measure,
 	unsigned int n_skip,
 	bool measure_gradient,
+	bool shuffle_states,
 	const std::vector< type (*)(const data_structures<type> &ds) > &observables,
 	data_structures<type> &ds,
 	arma::Mat<type> &F,
 	arma::Mat<type> &dZ,
 	arma::umat *J)
 {
-	unsigned int i, j, n_thermalize;
+	unsigned int i, j, n_thermalize, start_time;
 	double dummy;
 	arma::Col<type> buf;
 	
-	initial_configuration(ds);
 	
+	start_time = std::clock();
+	initial_configuration(ds);
+	std::cout << "time: " << 1. * (std::clock() - start_time) / CLOCKS_PER_SEC << "\n";
+	
+	start_time = std::clock();
 	n_thermalize = round(0.05 * n_measure);
 	for(i = 0; i < n_thermalize; i++)
 	{
 		for(j = 0; j < n_skip + 1; j++)
 		{
 			rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), true, dummy, ds);
-			swap_states(0, dummy, ds);
-			swap_states(1, dummy, ds);
+			if(shuffle_states)
+			{
+				swap_states(0, dummy, ds);
+				swap_states(1, dummy, ds);
+			}
 		}
 	}
 	
@@ -42,21 +51,25 @@ void monte_carlo_driver(
 		for(j = 0; j < n_skip + 1; j++)
 		{
 			rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), true, dummy, ds);
-			swap_states(0, dummy, ds);
-			swap_states(1, dummy, ds);
+			if(shuffle_states)
+			{
+				swap_states(0, dummy, ds);
+				swap_states(1, dummy, ds);
+			}
 		}
-		if(measure_gradient)
-		{
-			partition_function_gradient(ds, buf);
-			dZ.col(i) = buf;
-		}
-		for(j = 0; j < observables.size(); j++)
-		{
-			F(j, i) = observables[j](ds);
-		}
-		J[0].col(i) = ds.J[0];
-		J[1].col(i) = ds.J[1];
+// 		if(measure_gradient)
+// 		{
+// 			partition_function_gradient(ds, buf);
+// 			dZ.col(i) = buf;
+// 		}
+// 		for(j = 0; j < observables.size(); j++)
+// 		{
+// 			F(j, i) = observables[j](ds);
+// 		}
+// 		J[0].col(i) = ds.J[0];
+// 		J[1].col(i) = ds.J[1];
 	}
+	std::cout << "time: " << 1. * (std::clock() - start_time) / CLOCKS_PER_SEC << "\n";
 }
 
 template <class type>
@@ -148,6 +161,7 @@ template
 void monte_carlo_driver<double>(
 	unsigned int n_measure,
 	unsigned int n_skip,
+	bool shuffle_states,
 	bool measure_gradient,
 	const std::vector< double (*)(const data_structures<double> &ds) > &observables,
 	data_structures<double> &ds,
@@ -159,6 +173,7 @@ template
 void monte_carlo_driver<arma::cx_double>(
 	unsigned int n_measure,
 	unsigned int n_skip,
+	bool shuffle_states,
 	bool measure_gradient,
 	const std::vector< arma::cx_double (*)(const data_structures<arma::cx_double> &ds) > &observables,
 	data_structures<arma::cx_double> &ds,
