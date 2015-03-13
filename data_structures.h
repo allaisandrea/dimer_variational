@@ -31,7 +31,7 @@ struct data_structures
 	arma::vec Emw[2];
 	double Zo[2], Ze[2];
 	
-	arma::uvec J[2], K[2];
+	arma::uvec J[2];
 	arma::Mat<type> M[2];  
 	arma::Mat<type> Mi[2]; 
 	

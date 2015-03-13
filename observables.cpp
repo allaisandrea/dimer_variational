@@ -6,10 +6,9 @@
 template<class type>
 void partition_function_gradient(const data_structures<type> &ds, arma::Col<type> &G)
 {
-	unsigned int d, nd;
-	arma::uvec be, dd;
-	arma::Col<type> phi_occ;
-	arma::Mat<type> DM;
+	unsigned int d, nd, i;
+	static arma::Mat<type> DM;
+	static arma::uvec J[2], dd;
 	double buf;
 	
 	nd = ds.n_derivatives;
@@ -23,23 +22,33 @@ void partition_function_gradient(const data_structures<type> &ds, arma::Col<type
 	
 	G.zeros(nd);
 	
-	be = set_to_uvec(ds.boson_edges);
-	phi_occ = ds.phi(be);
+	for(i = 0; i < ds.particles.n_elem; i++)
+	{
+		if(ds.particles(i) == 1)
+		{
+			for(d = 0; d < nd; d++)
+			{
+				G(d) += ds.Dphi(i, d) / ds.phi(i);
+			}
+		}
+	}
+	
+	J[0] =  ds.J[0].rows(0, ds.Nf[0] - 1);
+	J[1] =  ds.J[1].rows(0, ds.Nf[1] - 1);
 	for(d = 0; d < nd; d++)
 	{
 		dd << d;
-		G(d) += accu(ds.Dphi(be, dd) / phi_occ);
 		
-		DM = ds.Dpsi[0].slice(d).submat(ds.fermion_edge[0], ds.J[0]);
+		DM = ds.Dpsi[0].slice(d).submat(ds.fermion_edge[0], J[0]);
 		G(d) += trace_of_product(ds.Mi[0], DM);
 		
-		DM = ds.Dpsi[1].slice(d).submat(ds.fermion_edge[1], ds.J[1]);
+		DM = ds.Dpsi[1].slice(d).submat(ds.fermion_edge[1], J[1]);
 		G(d) += trace_of_product(ds.Mi[1], DM);
 
 		G(d) *= 2.;
 		
-		G(d) -= accu(ds.Dw[0](ds.J[0], dd));
-		G(d) -= accu(ds.Dw[1](ds.J[1], dd));
+		G(d) -= accu(ds.Dw[0](J[0], dd));
+		G(d) -= accu(ds.Dw[1](J[1], dd));
 	}
 	
 }
@@ -69,7 +78,7 @@ type bf_amplitude(
 	
 	arma::uvec e;
 	e << destination_f;
-	V = ds.psi[s](e, ds.J[s]);
+	V = ds.psi[s](e, ds.J[s].rows(0, ds.Nf[s] - 1));
 	V -= ds.M[s].row(p);
 		
 	return conj(ds.phi(destination_b) / ds.phi(origin_b) * (1. + dot(V, ds.Mi[s].col(p))));

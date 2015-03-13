@@ -47,12 +47,12 @@ void test_M(const data_structures<type>& ds)
 		if(p < ds.Nf[0])
 		{
 			e << i;
-			M[0].row(p) = ds.psi[0](e, ds.J[0]);
+			M[0].row(p) = ds.psi[0](e, ds.J[0].rows(0, ds.Nf[0] - 1));
 		}
 		else if(p < ds.Nf[0] + ds.Nf[1])
 		{
 			e << i;
-			M[1].row(p - ds.Nf[0]) = ds.psi[1](e, ds.J[1]);
+			M[1].row(p - ds.Nf[0]) = ds.psi[1](e, ds.J[1].rows(0, ds.Nf[1] - 1));
 		}
 	}
 	
@@ -295,7 +295,7 @@ double phi_amplitude(data_structures<type> ds)
 
 void test_correct_distribution()
 {
-	unsigned int L = 4, Nu = 3, Nd = 3, c, i, n_measure = 1<<20, n_skip = n_measure / 16, which_case;
+	unsigned int L = 4, Nu = 2, Nd = 2, c, i, n_measure = 1<<24, n_skip = n_measure / 16, which_case;
 	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05, beta = 1;
 	double amp0, amp1, amp2;
 	arma::mat Mi[2], X, p;
@@ -374,7 +374,7 @@ void test_correct_distribution()
 
 void test_apriori_swap_proposal()
 {
-	unsigned int n = 5, no = 3, i, n_measure = 10000000, io, ie, s = 1;
+	unsigned int n = 5, no = 3, i, n_measure = 100000, io, ie, s = 1;
 	arma::mat p;
 	double max_w, Zo, Ze;
 	
@@ -384,10 +384,9 @@ void test_apriori_swap_proposal()
 	std::map<arma::uvec, my_pair, classcomp>::iterator it;
 	my_pair *pair;
 	
+	ds.Nf[s] = no;
 	ds.w[s].randn(n);
 	ds.J[s] = sort_index(ds.w[s]);
-	ds.K[s] = ds.J[s].rows(no, ds.J[s].n_rows - 1);
-	ds.J[s].resize(no);
 	compute_state_weights(ds);
 	
 	max_w = max(ds.w[s]);
@@ -396,12 +395,14 @@ void test_apriori_swap_proposal()
 	{
 		if(apriori_swap_proposal(s, ds, io, Zo, ie, Ze))
 		{
-			swap(ds.J[s](io), ds.K[s](ie));
+			swap(ds.J[s](io), ds.J[s](ie));
+			swap(ds.Epw[s](io), ds.Epw[s](ie));
+			swap(ds.Emw[s](io), ds.Emw[s](ie));
 			ds.Zo[s] = Zo;
 			ds.Ze[s] = Ze;
 		}
 		pair = &map[ds.J[s]];
-		pair->value = exp(max_w - accu(ds.w[s](ds.J[s])));
+		pair->value = exp(max_w - accu(ds.w[s](ds.J[s].rows(0, ds.Nf[s] - 1))));
 		pair->count ++;
 	}
 	
@@ -432,19 +433,19 @@ double energy(data_structures<type> &ds)
 	unsigned int i, s;
 	E = 0;
 	for(s = 0; s < 2; s++)
-	for(i = 0; i < ds.J[s].n_elem; i++)
+	for(i = 0; i < ds.Nf[s]; i++)
 		E += ds.w[s](ds.J[s](i));
 	return E;
 }
 
 void test_swap_states()
 {
-	unsigned int L = 4, Nu = 0, Nd = 2, c, i, n_measure = 1<<20, n_skip = n_measure / 16, which_case, s;
+	unsigned int L = 4, Nu = 2, Nd = 2, c, i, n_measure = 1<<20, n_skip = n_measure / 16, which_case, s;
 	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05, beta = 1;
 	double amp0, amp1, amp2, E0;
 	arma::mat Mi[2], X, p;
 	arma::vec w;
-	arma::uvec JK0[2], JK1[2];
+	arma::uvec J0[2], J1[2];
 	data_structures<double> ds;
 	std::map<arma::uvec, my_pair, classcomp> map;
 	std::map<arma::uvec, my_pair, classcomp>::iterator it;
@@ -480,27 +481,27 @@ void test_swap_states()
 	for(c = 0; c < n_measure; c++)
 	{
 		s = rng::uniform_integer(2);
-		JK0[0] = arma::join_vert(ds.J[0], ds.K[0]);
-		JK0[1] = arma::join_vert(ds.J[1], ds.K[1]);
+		J0[0] = ds.J[0];
+		J0[1] = ds.J[1];
 		amp0 = phi_amplitude(ds) * abs_squared(arma::det(Mi[0] * ds.M[0]) * arma::det(Mi[1] * ds.M[1]));
 		which_case = swap_states(s, amp2, ds);
-		JK1[0] = arma::join_vert(ds.J[0], ds.K[0]);
-		JK1[1] = arma::join_vert(ds.J[1], ds.K[1]);
+		J1[0] = ds.J[0];
+		J1[1] = ds.J[1];
 		amp1 = phi_amplitude(ds) * abs_squared(arma::det(Mi[0] * ds.M[0]) * arma::det(Mi[1] * ds.M[1]));
 		if(which_case != 0 && fabs(amp1/amp0/amp2 - 1.) > 1.e-7)
 		{
 			test_M(ds);
 			test_Mi(ds);
 			std::cout << s << std::setw(12) << amp1 / amp0 / amp2 - 1. << "\n";
-			my_print(JK0[s]);
-			my_print(JK1[s]);
+			my_print(J0[s]);
+			my_print(J1[s]);
 			std::cout << "\n";
 		}
 		
 		if(which_case == 0 && fabs(amp1/amp0 - 1.) > 1.e-7)
 			std::cout << "err: amp\n";
 		
-		pair = &map[arma::join_vert(ds.J[0], ds.J[1])];
+		pair = &map[arma::join_vert(ds.J[0].rows(0, ds.Nf[0] - 1), ds.J[1].rows(0, ds.Nf[1] - 1))];
 		amp1 *= exp(E0-energy(ds));
 		if(pair->value != 0. && fabs(pair->value - amp1) > 1.e-7)
 			std::cout << "err:map\n";

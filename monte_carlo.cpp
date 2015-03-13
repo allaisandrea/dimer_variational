@@ -12,12 +12,10 @@
 template<class type>
 void initial_configuration(data_structures<type> &ds)
 {
-	unsigned int x, y, L, c, s, max_attempts, Nu, Nd;
+	unsigned int x, y, L, c, i, s, max_attempts;
 	double dummy;
-	arma::uvec edges, e;
+	arma::uvec edges;
 	
-	Nu = ds.Nf[0];
-	Nd = ds.Nf[1];
 	L = ds.L;
 	
 	if(L % 2 == 1)
@@ -34,38 +32,34 @@ void initial_configuration(data_structures<type> &ds)
 	}
 	edges = shuffle(edges);
 	
-	if(edges.n_elem < Nu + Nd)
+	if(edges.n_elem < ds.Nf[0] + ds.Nf[1])
 		throw std::logic_error("Too many fermions");
 	
 	ds.particles.zeros(2 * L * L);
-	ds.M[0].set_size(Nu, Nu);
-	ds.M[1].set_size(Nd, Nd);
 	
+	c = 0;
 	for(s = 0; s < 2; s++)
 	{
+		ds.M[s].set_size(ds.Nf[s], ds.Nf[s]);
 		ds.J[s] = sort_index(ds.w[s]);
-		ds.K[s] = ds.J[s].rows(ds.Nf[s], ds.J[s].n_rows - 1);
-		ds.J[s].resize(ds.Nf[s]);
+		ds.fermion_edge[s].set_size(ds.Nf[s]);
+		for(i = 0; i < ds.Nf[s]; i++)
+		{
+			ds.particles(edges(c)) = c + 2;
+			ds.M[s].row(i) = ds.psi[s](edges.rows(c, c), ds.J[s].rows(0, ds.Nf[s] - 1));
+			ds.fermion_edge[s](i) = edges(c);
+			c++;
+		}
 	}
 	
-	compute_state_weights(ds);
-	
-	ds.fermion_edge[0].set_size(Nu);
-	ds.fermion_edge[1].set_size(Nd);
-	for(c = 0; c < Nu + Nd; c++)
-	{
-		ds.particles(edges(c)) = c + 2;
-		e << edges(c);
-		c < Nu ? s = 0 : s = 1;
-		ds.M[s].row(c - s * Nu) = ds.psi[s](e, ds.J[s]);
-		ds.fermion_edge[s](c - s * Nu) = edges(c);
-	}
-	
-	for(c = Nu + Nd; c < edges.n_elem; c++)
+	for(c = ds.Nf[0] + ds.Nf[1]; c < edges.n_elem; c++)
 	{
 		ds.particles(edges(c)) = 1;
 		ds.boson_edges.insert(edges(c));
 	}
+	
+	compute_state_weights(ds);
+
 	
 	c = 0;
 	max_attempts = 1000;
@@ -383,12 +377,14 @@ void compute_state_weights(data_structures<type> &ds)
 	unsigned int s;
 	for(s = 0; s < 2; s++)
 	{
-		if(ds.w[s].n_rows > 0)
+		if(ds.Nf[s] > 0)
 		{
 			ds.Epw[s] = exp(0.5 * (ds.w[s] -  max(ds.w[s])));
 			ds.Emw[s] = exp(0.5 * (min(ds.w[s]) - ds.w[s]));
-			ds.Zo[s] = accu(ds.Epw[s](ds.J[s]));
-			ds.Ze[s] = accu(ds.Emw[s](ds.K[s]));
+			ds.Epw[s] = ds.Epw[s](ds.J[s]);
+			ds.Emw[s] = ds.Emw[s](ds.J[s]);
+			ds.Zo[s] = accu(ds.Epw[s].rows(0, ds.Nf[s] - 1));
+			ds.Ze[s] = accu(ds.Emw[s].rows(ds.Nf[s], ds.Emw[s].n_rows - 1));
 		}
 	}
 }
@@ -396,28 +392,33 @@ void compute_state_weights(data_structures<type> &ds)
 template<class type>
 bool apriori_swap_proposal(unsigned int s, const data_structures<type> &ds, unsigned int &io, double &Zo2, unsigned int &ie, double &Ze2)
 {
+	unsigned int N;
 	double x;
+	const double* Epw, *Emw;
+	N = ds.Nf[s];
+	Epw = ds.Epw[s].memptr();
+	Emw = ds.Emw[s].memptr();
 	
 	x = ds.Zo[s] * rng::uniform();
 	io = 0;
 	while(x > 0)
 	{
-		x -= ds.Epw[s](ds.J[s](io));
+		x -= Epw[io];
 		io++;
 	}
 	io--;
 	
 	x = ds.Ze[s] * rng::uniform();
-	ie = 0;
+	ie = N;
 	while(x > 0)
 	{
-		x -= ds.Emw[s](ds.K[s](ie));
+		x -= Emw[ie];
 		ie++;
 	}
 	ie--;
 	
-	Zo2 = ds.Zo[s] - ds.Epw[s](ds.J[s](io)) + ds.Epw[s](ds.K[s](ie));
-	Ze2 = ds.Ze[s] - ds.Emw[s](ds.K[s](ie)) + ds.Emw[s](ds.J[s](io));
+	Zo2 = ds.Zo[s] - Epw[io] + Epw[ie];
+	Ze2 = ds.Ze[s] - Emw[ie] + Emw[io];
 	
 	return rng::uniform() < ds.Zo[s] * ds.Ze[s] / Zo2 / Ze2;	
 }
@@ -435,7 +436,7 @@ bool swap_states(unsigned int s, double& amp, data_structures<type> & ds)
 	if(ds.Nf[s] > 0 && apriori_swap_proposal(s, ds, io, Zo, ie, Ze))
 	{
 		U[s].set_size(ds.M[s].n_rows);
-		copy_vector_sparse(ds.M[s].n_rows, ds.fermion_edge[s].memptr(), ds.psi[s].colptr(ds.K[s](ie)), 1, U[s].memptr(), 1);
+		copy_vector_sparse(ds.M[s].n_rows, ds.fermion_edge[s].memptr(), ds.psi[s].colptr(ds.J[s](ie)), 1, U[s].memptr(), 1);
 		add_to_vector(ds.M[s].n_rows, (type) -1., ds.M[s].colptr(io), 1,  U[s].memptr(), 1);
 		
 		V[s].set_size(ds.M[s].n_cols);
@@ -449,7 +450,9 @@ bool swap_states(unsigned int s, double& amp, data_structures<type> & ds)
 			add_to_vector(U[s].n_rows, (type) 1., U[s].memptr(), 1, ds.M[s].colptr(io), 1);
 			buf = ds.Mi[s] * U[s];
 			rank_k_update(-1. / det, buf, V[s], ds.Mi[s]);
-			swap(ds.J[s](io), ds.K[s](ie));
+			swap(ds.J[s](io), ds.J[s](ie));
+			swap(ds.Epw[s](io), ds.Epw[s](ie));
+			swap(ds.Emw[s](io), ds.Emw[s](ie));
 			ds.Zo[s] = Zo;
 			ds.Ze[s] = Ze;
 			return true;
