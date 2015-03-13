@@ -2,7 +2,6 @@
 #define __data_structures_h__
 
 #include <armadillo>
-#include <set>
 #include <exception>
 
 template <class type>
@@ -17,7 +16,6 @@ struct data_structures
 	arma::umat adjacent_faces;
 	arma::uvec particles;
 	arma::uvec fermion_edge[2];
-	std::set<unsigned int> boson_edges;
 	
 	arma::Mat<type> psi[2];
 	arma::Cube<type> Dpsi[2];

@@ -16,9 +16,9 @@ int main(int argc, char** argv)
 // 	test_map();
 // 	test_eigensystem_variation();
 // 	test_homogeneous_state_derivatives();
-// 	test_monte_carlo_driver();
+	test_monte_carlo_driver();
 // 	test_homogeneous_eigenfunctions();
-	test_states_autocorrelation();
+// 	test_states_autocorrelation();
 // 	test_rank_1_update();
 	return 0x0;
 }

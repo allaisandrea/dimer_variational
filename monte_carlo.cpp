@@ -53,10 +53,7 @@ void initial_configuration(data_structures<type> &ds)
 	}
 	
 	for(c = ds.Nf[0] + ds.Nf[1]; c < edges.n_elem; c++)
-	{
 		ds.particles(edges(c)) = 1;
-		ds.boson_edges.insert(edges(c));
-	}
 	
 	compute_state_weights(ds);
 

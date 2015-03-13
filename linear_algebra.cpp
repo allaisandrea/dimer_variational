@@ -2,6 +2,7 @@
 #include <exception>
 
 extern "C"{
+	
 	void dgeqp3_(int*, int*, double*, int* m, int*, double*, double*, int*, int*);
 	void dorgqr_(int *, int*, int*, double*, int*, double*, double*, int*, int*);
 	void zgeqp3_(int*, int*, double*, int* m, int*, double*, double*, int*, double*, int*);
@@ -12,6 +13,8 @@ extern "C"{
 	void zcopy_(const int*, const arma::cx_double*, const int*, arma::cx_double*, const int*);
 	void daxpy_(const int*, const double*, const double*, const int*, double*, const int*);
 	void zaxpy_(const int*, const arma::cx_double*, const arma::cx_double*, const int*, arma::cx_double*, const int*);
+	double ddot_(const int *, const double *, const int *, const double *, const int *);
+	arma::cx_double zdotu_(const int *, const arma::cx_double *, const int *, const arma::cx_double *, const int *);
 }
 
 void pivoting_qr_decomposition(arma::mat &A, arma::mat &Q, arma::uvec &perm)
@@ -172,38 +175,70 @@ void rank_k_update(arma::cx_double a, const arma::Mat<arma::cx_double> &U, const
 
 }
 
-template <class type>
-type trace_of_product(const arma::Mat<type> &_M1, const arma::Mat<type> &_M2)
+// template <class type>
+// type trace_of_product(const arma::Mat<type> &_M1, const arma::Mat<type> &_M2)
+// {
+// 	unsigned int i, ni, j, m, n;
+// 	type buf;
+// 	const type *M1, *M2;
+// 	
+// 	m = _M1.n_rows;
+// 	n = _M1.n_cols;
+// 	if(_M2.n_rows != n || _M2.n_cols != m)
+// 		throw std::logic_error("Incorrect matrix dimensions");
+// 	
+// 	M1 = _M1.memptr();
+// 	M2 = _M2.memptr();
+// 	
+// 	buf = 0;
+// 	for(i = 0; i < m; i++)
+// 	{
+// 		ni = n * i;
+// 		for(j = 0; j < n; j++)
+// 		{
+// 			buf += M1[i + m * j] * M2[j + ni];
+// 		}
+// 	}
+// 	return buf;
+// }
+
+double trace_of_product(const arma::Mat<double> &M1, const arma::Mat<double> &M2)
 {
-	unsigned int i, ni, j, m, n;
-	type buf;
-	const type *M1, *M2;
+	int i, m, n, inc = 1;
+	const double *_M1, *_M2;
+	double buf;
 	
-	m = _M1.n_rows;
-	n = _M1.n_cols;
-	if(_M2.n_rows != n || _M2.n_cols != m)
+	if(M2.n_rows != M1.n_cols || M2.n_cols != M1.n_rows)
 		throw std::logic_error("Incorrect matrix dimensions");
+	m = M1.n_rows;
+	n = M1.n_cols;
+	_M1 = M1.memptr();
+	_M2 = M2.memptr();
 	
-	M1 = _M1.memptr();
-	M2 = _M2.memptr();
-	
-	buf = 0;
+	buf = 0.;
 	for(i = 0; i < m; i++)
-	{
-		ni = n * i;
-		for(j = 0; j < n; j++)
-		{
-			buf += M1[i + m * j] * M2[j + ni];
-		}
-	}
+		buf += ddot_(&n, _M1 + i, & m, _M2 + n * i, &inc);
 	return buf;
 }
 
-template 
-double trace_of_product<double>(const arma::Mat<double> &_M1, const arma::Mat<double> &_M2);
-template 
-arma::cx_double trace_of_product<arma::cx_double>(const arma::Mat<arma::cx_double> &_M1, const arma::Mat<arma::cx_double> &_M2);
-
+arma::cx_double trace_of_product(const arma::Mat<arma::cx_double> &M1, const arma::Mat<arma::cx_double> &M2)
+{
+	int i, m, n, inc = 1;
+	const arma::cx_double *_M1, *_M2;
+	arma::cx_double buf;
+	
+	if(M2.n_rows != M1.n_cols || M2.n_cols != M1.n_rows)
+		throw std::logic_error("Incorrect matrix dimensions");
+	m = M1.n_rows;
+	n = M1.n_cols;
+	_M1 = M1.memptr();
+	_M2 = M2.memptr();
+	
+	buf = 0.;
+	for(i = 0; i < m; i++)
+		buf += zdotu_(&n, _M1 + i, & m, _M2 + n * i, &inc);
+	return buf;
+}
 
 template <class type>
 void eigensystem_variation(const arma::Mat<type> U, const arma::vec w, const arma::Mat<type> V, arma::Mat<type> &dU, arma::vec &dw)
@@ -241,116 +276,6 @@ void eigensystem_variation<double>(const arma::Mat<double> U, const arma::vec w,
 template
 void eigensystem_variation<arma::cx_double>(const arma::Mat<arma::cx_double> U, const arma::vec w, const arma::Mat<arma::cx_double> V, arma::Mat<arma::cx_double> &dU, arma::vec &dw);
 
-
-// template<class type>
-// void copy_line(type c1, type c2, unsigned int m, unsigned int ldA, const type * A, unsigned int ldB, type* B)
-// {
-// 	unsigned int a;
-// 
-// 	if(c1 == (type) 1)
-// 	{
-// 		if(c2 == (type) 1)
-// 		{
-// 			for(a = 0; a < m; a++)
-// 			{
-// 				B[a * ldB]  += A[a * ldA];
-// 			}
-// 		}
-// 		else if(c2 == (type) -1)
-// 		{
-// 			for(a = 0; a < m; a++)
-// 			{
-// 				B[a * ldB]  -= A[a * ldA];
-// 			}
-// 		}
-// 		else
-// 		{
-// 			for(a = 0; a < m; a++)
-// 			{
-// 				B[a * ldB]  +=  c2 * A[a * ldA];
-// 			}
-// 		}
-// 	}
-// 	else if(c1 == (type) 0)
-// 	{
-// 		if(c2 == (type) 1)
-// 		{
-// 			for(a = 0; a < m; a++)
-// 			{
-// 				B[a * ldB]  = A[a * ldA];
-// 			}
-// 		}
-// 		else if(c2 == (type) -1)
-// 		{
-// 			for(a = 0; a < m; a++)
-// 			{
-// 				B[a * ldB]  = -A[a * ldA];
-// 			}
-// 		}
-// 		else
-// 		{
-// 			for(a = 0; a < m; a++)
-// 			{
-// 				B[a * ldB]  = c2 * A[a * ldA];
-// 			}
-// 		}
-// 	}
-// 	else if(c1 == (type) -1)
-// 	{
-// 		if(c2 == (type) 1)
-// 		{
-// 			for(a = 0; a < m; a++)
-// 			{
-// 				B[a * ldB]  = - B[a * ldB] + A[a * ldA];
-// 			}
-// 		}
-// 		else if(c2 == (type) -1)
-// 		{
-// 			for(a = 0; a < m; a++)
-// 			{
-// 				B[a * ldB]  = - B[a * ldB] - A[a * ldA];
-// 			}
-// 		}
-// 		else
-// 		{
-// 			for(a = 0; a < m; a++)
-// 			{
-// 				B[a * ldB]  = - B[a * ldB] + c2 * A[a * ldA];
-// 			}
-// 		}
-// 	}
-// 	else
-// 	{
-// 		if(c2 == (type) 1)
-// 		{
-// 			for(a = 0; a < m; a++)
-// 			{
-// 				B[a * ldB]  = c1 * B[a * ldB] + A[a * ldA];
-// 			}
-// 		}
-// 		else if(c2 == (type) -1)
-// 		{
-// 			for(a = 0; a < m; a++)
-// 			{
-// 				B[a * ldB]  = c1 * B[a * ldB] - A[a * ldA];
-// 			}
-// 		}
-// 		else
-// 		{
-// 			for(a = 0; a < m; a++)
-// 			{
-// 				B[a * ldB]  = c1 * B[a * ldB] + c2 * A[a * ldA];
-// 			}
-// 		}
-// 	}
-// }
-// 
-// template
-// void copy_line<unsigned int>(unsigned int c1, unsigned int c2, unsigned int m, unsigned int ldA, const unsigned int * A, unsigned int ldB, unsigned int* B);
-// template
-// void copy_line<double>(double c1, double c2, unsigned int m, unsigned int ldA, const double * A, unsigned int ldB, double* B);
-// template
-// void copy_line<arma::cx_double>(arma::cx_double c1, arma::cx_double c2, unsigned int m, unsigned int ldA, const arma::cx_double * A, unsigned int ldB, arma::cx_double* B);
 
 void copy_vector(int n, const double *x, int inc_x, double* y, int inc_y)
 {
@@ -406,8 +331,24 @@ template
 void copy_vector_sparse<arma::cx_double>(unsigned int n, const unsigned int *j, const arma::cx_double * x, unsigned int inc_x, arma::cx_double* y, unsigned int inc_y);
 
 
+template<class type>
+void copy_matrix_sparse(unsigned int m, unsigned int n, const unsigned int *i, const unsigned int *j, const type * A, unsigned int ldA, type* B, unsigned int ldB)
+{
+	unsigned int a, b;
+	const type* Aj;
+	type* Bb;
+	for(b = 0; b < n; b++)
+	{
+		Aj = A + ldA * j[b];
+		Bb = B + ldB * b;
+		for(a = 0; a < m; a++)
+		{
+			Bb[a]  = Aj[i[a]];
+		}
+	}
+}
 
-
-
-
-
+template
+void copy_matrix_sparse<double>(unsigned int m, unsigned int n, const unsigned int *i, const unsigned int *j, const double * A, unsigned int ldA, double* B, unsigned int ldB);
+template
+void copy_matrix_sparse<arma::cx_double>(unsigned int m, unsigned int n, const unsigned int *i, const unsigned int *j, const arma::cx_double * A, unsigned int ldA, arma::cx_double* B, unsigned int ldB);

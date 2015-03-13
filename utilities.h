@@ -40,17 +40,17 @@ inline arma::cx_double conj(arma::cx_double x)
 }
 
 
-inline arma::uvec set_to_uvec(const std::set<unsigned int> &s)
-{
-	unsigned int c;
-	std::set<unsigned int>::iterator i;
-	arma::uvec v;
-	v.set_size(s.size());
-	
-	c = 0;
-	for(i = s.begin(); i != s.end(); ++i)
-		v(c++) = *i;
-	return v;
-}
+// inline arma::uvec set_to_uvec(const std::set<unsigned int> &s)
+// {
+// 	unsigned int c;
+// 	std::set<unsigned int>::iterator i;
+// 	arma::uvec v;
+// 	v.set_size(s.size());
+// 	
+// 	c = 0;
+// 	for(i = s.begin(); i != s.end(); ++i)
+// 		v(c++) = *i;
+// 	return v;
+// }
 #endif
 

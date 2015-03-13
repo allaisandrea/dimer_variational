@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <map>
 #include <ctime>
+#include <set>
 #include "data_structures.h"
 #include "states.h"
 #include "monte_carlo.h"
@@ -673,7 +674,7 @@ void test_monte_carlo_driver()
 	for(i = 0; i < n_points; i++)
 	{
 		std::cout << "point " << i + 1 << "..." << std::endl;
-		t2 = -1. +  2. * i / (n_points - 1.);
+		t2 = -0.2 +  0.4 * i / (n_points - 1.);
 		homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
 		monte_carlo_driver(n_measure, n_skip, true, true, observables, ds, F, dZ, J);
 		autocorrelations(F, sF.slice(i));
@@ -704,7 +705,7 @@ void test_monte_carlo_driver()
 
 void test_states_autocorrelation()
 {
-	unsigned int i, j, n_measure = 10000, n_skip = 1000, n_points = 20, n_observables, start_time;
+	unsigned int i, j, n_measure = 10000, n_skip = 10000, n_points = 20, n_observables, start_time;
 	double dmu = 0, t1 = 1., t2 = 0.01, t3 = 0, t4 = 1., beta = 50.;
 	double E, sE;
 	arma::mat F, dZ;

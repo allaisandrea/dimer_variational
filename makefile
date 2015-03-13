@@ -1,5 +1,5 @@
 local: CXX = g++
-local: CXXFLAGS = -g -pg
+local: CXXFLAGS = -D ARMA_NO_DEBUG
 local: LIBS = -llapack -lblas -lgsl -lcblas
 local: OUTPUT = debug/run
 

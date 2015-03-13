@@ -51,23 +51,22 @@ void monte_carlo_driver(
 		for(j = 0; j < n_skip + 1; j++)
 		{
 			rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), true, dummy, ds);
-			if(shuffle_states)
+			if(shuffle_states && j % 10 == 0)
 			{
-				swap_states(0, dummy, ds);
-				swap_states(1, dummy, ds);
+				swap_states(rng::uniform_integer(2), dummy, ds);
 			}
 		}
-// 		if(measure_gradient)
-// 		{
-// 			partition_function_gradient(ds, buf);
-// 			dZ.col(i) = buf;
-// 		}
-// 		for(j = 0; j < observables.size(); j++)
-// 		{
-// 			F(j, i) = observables[j](ds);
-// 		}
-// 		J[0].col(i) = ds.J[0];
-// 		J[1].col(i) = ds.J[1];
+		if(measure_gradient)
+		{
+			partition_function_gradient(ds, buf);
+			dZ.col(i) = buf;
+		}
+		for(j = 0; j < observables.size(); j++)
+		{
+			F(j, i) = observables[j](ds);
+		}
+		J[0].col(i) = ds.J[0];
+		J[1].col(i) = ds.J[1];
 	}
 	std::cout << "time: " << 1. * (std::clock() - start_time) / CLOCKS_PER_SEC << "\n";
 }

@@ -6,10 +6,10 @@
 template<class type>
 void partition_function_gradient(const data_structures<type> &ds, arma::Col<type> &G)
 {
-	unsigned int d, nd, i;
-	static arma::Mat<type> DM;
-	static arma::uvec J[2], dd;
-	double buf;
+	unsigned int d, nd, i, s;
+	const unsigned int *J;
+	static arma::Mat<type> DM[2];
+	type buf;
 	
 	nd = ds.n_derivatives;
 	
@@ -20,35 +20,30 @@ void partition_function_gradient(const data_structures<type> &ds, arma::Col<type
 		ds.Dw[1].n_cols != nd)
 		throw std::logic_error("Number of derivatives do not match");
 	
-	G.zeros(nd);
+	G.set_size(nd);
+	DM[0].set_size(ds.Nf[0], ds.Nf[0]);
+	DM[1].set_size(ds.Nf[1], ds.Nf[1]);
 	
-	for(i = 0; i < ds.particles.n_elem; i++)
-	{
-		if(ds.particles(i) == 1)
-		{
-			for(d = 0; d < nd; d++)
-			{
-				G(d) += ds.Dphi(i, d) / ds.phi(i);
-			}
-		}
-	}
-	
-	J[0] =  ds.J[0].rows(0, ds.Nf[0] - 1);
-	J[1] =  ds.J[1].rows(0, ds.Nf[1] - 1);
 	for(d = 0; d < nd; d++)
 	{
-		dd << d;
+		buf = 0.;
+		for(i = 0; i < ds.particles.n_elem; i++)
+		{
+			if(ds.particles(i) == 1)
+				buf += ds.Dphi(i, d) / ds.phi(i);
+		}
 		
-		DM = ds.Dpsi[0].slice(d).submat(ds.fermion_edge[0], J[0]);
-		G(d) += trace_of_product(ds.Mi[0], DM);
-		
-		DM = ds.Dpsi[1].slice(d).submat(ds.fermion_edge[1], J[1]);
-		G(d) += trace_of_product(ds.Mi[1], DM);
-
-		G(d) *= 2.;
-		
-		G(d) -= accu(ds.Dw[0](J[0], dd));
-		G(d) -= accu(ds.Dw[1](J[1], dd));
+		for(s = 0; s < 2; s++)
+		{
+			J = ds.J[s].memptr();
+			copy_matrix_sparse(ds.Nf[s], ds.Nf[s], ds.fermion_edge[s].memptr(), J, ds.Dpsi[s].memptr() + d * ds.Dpsi[s].n_rows * ds.Dpsi[s].n_cols, ds.Dpsi[s].n_rows, DM[s].memptr(), DM[s].n_rows);
+			buf += 2. * trace_of_product(ds.Mi[s], DM[s]);
+			for(i = 0; i < ds.Nf[s]; i++)
+			{
+				buf -= ds.Dw[s](J[i], d);
+			}
+		}		
+		G(d) = buf;
 	}
 	
 }
@@ -74,14 +69,19 @@ type bf_amplitude(
 	unsigned int destination_f, 
 	const data_structures<type> &ds)
 {
-	arma::Row<type> V;
+	static arma::Row<type> V[2];
+	static arma::Col<type> U[2];
 	
 	arma::uvec e;
 	e << destination_f;
-	V = ds.psi[s](e, ds.J[s].rows(0, ds.Nf[s] - 1));
-	V -= ds.M[s].row(p);
-		
-	return conj(ds.phi(destination_b) / ds.phi(origin_b) * (1. + dot(V, ds.Mi[s].col(p))));
+	
+	V[s].set_size(ds.M[s].n_cols);
+	copy_vector_sparse(ds.M[s].n_cols, ds.J[s].memptr(), ds.psi[s].memptr() + destination_f, ds.psi[s].n_rows, V[s].memptr(), V[s].n_rows);
+	add_to_vector(ds.M[s].n_cols, (type) -1., ds.M[s].memptr() + p, ds.M[s].n_rows, V[s].memptr(), V[s].n_rows);
+	
+	U[s].set_size(ds.M[s].n_rows);
+	copy_vector(ds.M[s].n_rows, ds.Mi[s].colptr(p), 1, U[s].memptr(), 1);
+	return conj(ds.phi(destination_b) / ds.phi(origin_b) * (1. + dot(V[s], U[s])));
 	
 }
 
@@ -214,7 +214,7 @@ template<class type>
 type fermion_hopping_3(const data_structures<type> &ds)
 {
 	unsigned int f1, f2, mu,  p, s;
-	arma::uvec edges, particles;
+	unsigned int edges[6], particles[6];
 	type buf;
 	
 	buf = 0.;
@@ -224,69 +224,70 @@ type fermion_hopping_3(const data_structures<type> &ds)
 		f2 = ds.adjacent_faces(mu, f1);
 		if(mu == 0)
 		{
-			edges 
-				<< ds.face_edges(0, f1)
-				<< ds.face_edges(0, f2)
-				<< ds.face_edges(1, f2)
-				<< ds.face_edges(2, f2)
-				<< ds.face_edges(2, f1)
-				<< ds.face_edges(3, f1);
+			edges[0] =  ds.face_edges(0, f1);
+			edges[1] =  ds.face_edges(0, f2);
+			edges[2] =  ds.face_edges(1, f2);
+			edges[3] =  ds.face_edges(2, f2);
+			edges[4] =  ds.face_edges(2, f1);
+			edges[5] =  ds.face_edges(3, f1);
 		}
 		else if(mu == 1)
 		{
-			edges 
-				<< ds.face_edges(0, f1)
-				<< ds.face_edges(1, f1)
-				<< ds.face_edges(1, f2)
-				<< ds.face_edges(2, f2)
-				<< ds.face_edges(3, f2)
-				<< ds.face_edges(3, f1);
+			edges[0] =  ds.face_edges(0, f1);
+			edges[1] =  ds.face_edges(1, f1);
+			edges[2] =  ds.face_edges(1, f2);
+			edges[3] =  ds.face_edges(2, f2);
+			edges[4] =  ds.face_edges(3, f2);
+			edges[5] =  ds.face_edges(3, f1);
 		}
 		else
 			throw std::logic_error("This should not happen");
+		particles[0] = ds.particles(edges[0]);
+		particles[1] = ds.particles(edges[1]);
+		particles[2] = ds.particles(edges[2]);
+		particles[3] = ds.particles(edges[3]);
+		particles[4] = ds.particles(edges[4]);
+		particles[5] = ds.particles(edges[5]);
 		
-		particles = ds.particles(edges);
-		
-		
-		if(ds.is_boson(particles(0)) && ds.is_fermion(particles(2)))
+		if(ds.is_boson(particles[0]) && ds.is_fermion(particles[2]))
 		{
-			ds.to_p_s(particles(2), p, s);
-			buf += bf_amplitude(edges(0), edges(2), p, s, edges(2), edges(0), ds);
+			ds.to_p_s(particles[2], p, s);
+			buf += bf_amplitude(edges[0], edges[2], p, s, edges[2], edges[0], ds);
 		}
-		if(ds.is_boson(particles(2)) && ds.is_fermion(particles(0)))
+		if(ds.is_boson(particles[2]) && ds.is_fermion(particles[0]))
 		{
-			ds.to_p_s(particles(0), p, s);
-			buf += bf_amplitude(edges(2), edges(0), p, s, edges(0), edges(2), ds);
+			ds.to_p_s(particles[0], p, s);
+			buf += bf_amplitude(edges[2], edges[0], p, s, edges[0], edges[2], ds);
 		}
-		if(ds.is_boson(particles(2)) && ds.is_fermion(particles(4)))
+		if(ds.is_boson(particles[2]) && ds.is_fermion(particles[4]))
 		{
-			ds.to_p_s(particles(4), p, s);
-			buf += bf_amplitude(edges(2), edges(4), p, s, edges(4), edges(2), ds);
+			ds.to_p_s(particles[4], p, s);
+			buf += bf_amplitude(edges[2], edges[4], p, s, edges[4], edges[2], ds);
 		}
-		if(ds.is_boson(particles(4)) && ds.is_fermion(particles(2)))
+		if(ds.is_boson(particles[4]) && ds.is_fermion(particles[2]))
 		{
-			ds.to_p_s(particles(2), p, s);
-			buf += bf_amplitude(edges(4), edges(2), p, s, edges(2), edges(4), ds);
+			ds.to_p_s(particles[2], p, s);
+			buf += bf_amplitude(edges[4], edges[2], p, s, edges[2], edges[4], ds);
 		}
-		if(ds.is_boson(particles(1)) && ds.is_fermion(particles(5)))
+		if(ds.is_boson(particles[1]) && ds.is_fermion(particles[5]))
 		{
-			ds.to_p_s(particles(5), p, s);
-			buf += bf_amplitude(edges(1), edges(5), p, s, edges(5), edges(1), ds);
+			ds.to_p_s(particles[5], p, s);
+			buf += bf_amplitude(edges[1], edges[5], p, s, edges[5], edges[1], ds);
 		}
-		if(ds.is_boson(particles(5)) && ds.is_fermion(particles(1)))
+		if(ds.is_boson(particles[5]) && ds.is_fermion(particles[1]))
 		{
-			ds.to_p_s(particles(1), p, s);
-			buf += bf_amplitude(edges(5), edges(1), p, s, edges(1), edges(5), ds);
+			ds.to_p_s(particles[1], p, s);
+			buf += bf_amplitude(edges[5], edges[1], p, s, edges[1], edges[5], ds);
 		}
-		if(ds.is_boson(particles(3)) && ds.is_fermion(particles(5)))
+		if(ds.is_boson(particles[3]) && ds.is_fermion(particles[5]))
 		{
-			ds.to_p_s(particles(5), p, s);
-			buf += bf_amplitude(edges(3), edges(5), p, s, edges(5), edges(3), ds);
+			ds.to_p_s(particles[5], p, s);
+			buf += bf_amplitude(edges[3], edges[5], p, s, edges[5], edges[3], ds);
 		}
-		if(ds.is_boson(particles(5)) && ds.is_fermion(particles(3)))
+		if(ds.is_boson(particles[5]) && ds.is_fermion(particles[3]))
 		{
-			ds.to_p_s(particles(3), p, s);
-			buf += bf_amplitude(edges(5), edges(3), p, s, edges(3), edges(5), ds);
+			ds.to_p_s(particles[3], p, s);
+			buf += bf_amplitude(edges[5], edges[3], p, s, edges[3], edges[5], ds);
 		}
 	}
 	
