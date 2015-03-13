@@ -48,6 +48,8 @@ void initial_configuration(data_structures<type> &ds)
 		ds.J[s].resize(ds.Nf[s]);
 	}
 	
+	compute_state_weights(ds);
+	
 	ds.fermion_edge[0].set_size(Nu);
 	ds.fermion_edge[1].set_size(Nd);
 	for(c = 0; c < Nu + Nd; c++)
@@ -88,10 +90,11 @@ unsigned int rotate_face(
 	double &amp,
 	data_structures<type> &ds)
 {
-	static unsigned int particles[4], edge[4];
+	static unsigned int particles[4], edge[4], i;
 	
-	copy_line((unsigned int) 0, (unsigned int) 1, 4, 1, ds.face_edges.memptr() + 4 * f, 1, edge);
-	copy_line_sparse((unsigned int) 0, (unsigned int) 1, 4, edge, 1, ds.particles.memptr(), 1, particles);
+	for(i = 0; i < 4; i++)
+		edge[i] = ds.face_edges[4 * f + i];
+	copy_vector_sparse(4, edge, ds.particles.memptr(), 1, particles, 1);
 	
 	if(particles[0] == 0 && particles[2] == 0)
 	{
@@ -208,14 +211,14 @@ unsigned int rotate_face_bf(
 		s = 1;
 	}
 	
-	V[s].set_size(ds.Nf[s]);
-	copy_line_sparse((type) 0., (type) +1., ds.Nf[s], ds.J[s].memptr(), ds.psi[s].n_rows, ds.psi[s].memptr() + destination2, 1, V[s].memptr());
-	copy_line_sparse((type) 1., (type) -1., ds.Nf[s], ds.J[s].memptr(), ds.psi[s].n_rows, ds.psi[s].memptr() + origin2, 1, V[s].memptr());
+	V[s].set_size(ds.M[s].n_cols);
+	copy_vector_sparse(ds.M[s].n_cols, ds.J[s].memptr(), ds.psi[s].memptr() + destination2, ds.psi[s].n_rows, V[s].memptr(), V[s].n_rows);
+	add_to_vector(ds.M[s].n_cols, (type) -1., ds.M[s].memptr() + p, ds.M[s].n_rows, V[s].memptr(), V[s].n_rows);
 	
 	if(step)
 	{
-		U[s].set_size(ds.Nf[s]);
-		copy_line((type) 0., (type) 1., ds.Nf[s], 1, ds.Mi[s].colptr(p), 1, U[s].memptr());
+		U[s].set_size(ds.M[s].n_rows);
+		copy_vector(ds.Mi[s].n_rows, ds.Mi[s].colptr(p), 1, U[s].memptr(), 1);
 		
 		det = 1. + dot(V[s], U[s]);
 		amp = abs_squared(det * ds.phi(destination1) / ds.phi(origin1));
@@ -229,7 +232,7 @@ unsigned int rotate_face_bf(
 	}
 	if(!step || accept)
 	{
-		copy_line((type) 1., (type) 1., ds.Nf[s], 1, V[s].memptr(), ds.Nf[s], ds.M[s].memptr() + p);
+		add_to_vector(V[s].n_cols, (type) 1., V[s].memptr(), V[s].n_rows, ds.M[s].memptr() + p, ds.M[s].n_rows);
 		ds.particles(destination1) = ds.particles(origin1);
 		ds.particles(destination2) = ds.particles(origin2);
 		ds.particles(origin1) = 0;
@@ -289,19 +292,19 @@ unsigned int rotate_face_ff(
 
 	if(s1 == s2)
 	{
-		V2[s1].set_size(2, ds.Nf[s1]);
+		V2[s1].set_size(2, ds.M[s1].n_cols);
 		
-		copy_line_sparse((type) 0., (type) +1., ds.Nf[s1], ds.J[s1].memptr(), ds.psi[s1].n_rows, ds.psi[s1].memptr() + destination1, 2, V2[s1].memptr());
-		copy_line_sparse((type) 1., (type) -1., ds.Nf[s1], ds.J[s1].memptr(), ds.psi[s1].n_rows, ds.psi[s1].memptr() + origin1,      2, V2[s1].memptr());
+		copy_vector_sparse(ds.M[s1].n_cols, ds.J[s1].memptr(), ds.psi[s1].memptr() + destination1, ds.psi[s1].n_rows, V2[s1].memptr() + 0, V2[s1].n_rows);
+		add_to_vector(ds.M[s1].n_cols, (type) -1., ds.M[s1].memptr() + p1, ds.M[s1].n_rows, V2[s1].memptr() + 0, V2[s1].n_rows);
 		
-		copy_line_sparse((type) 0., (type) +1., ds.Nf[s1], ds.J[s1].memptr(), ds.psi[s1].n_rows, ds.psi[s1].memptr() + destination2, 2, V2[s1].memptr() + 1);
-		copy_line_sparse((type) 1., (type) -1., ds.Nf[s1], ds.J[s1].memptr(), ds.psi[s1].n_rows, ds.psi[s1].memptr() + origin2     , 2, V2[s1].memptr() + 1);
+		copy_vector_sparse(ds.M[s1].n_cols, ds.J[s1].memptr(), ds.psi[s1].memptr() + destination2, ds.psi[s1].n_rows, V2[s1].memptr() + 1, V2[s1].n_rows);
+		add_to_vector(ds.M[s1].n_cols, (type) -1., ds.M[s1].memptr() + p2, ds.M[s1].n_rows, V2[s1].memptr() + 1, V2[s1].n_rows);
 				
 		if(step)
 		{
-			U2[s1].set_size(ds.Nf[s1], 2);
-			copy_line((type) 0., (type) 1., ds.Nf[s1], 1, ds.Mi[s1].colptr(p1), 1, U2[s1].colptr(0));
-			copy_line((type) 0., (type) 1., ds.Nf[s1], 1, ds.Mi[s1].colptr(p2), 1, U2[s1].colptr(1));
+			U2[s1].set_size(ds.M[s1].n_rows, 2);
+			copy_vector(ds.Mi[s1].n_rows, ds.Mi[s1].colptr(p1), 1, U2[s1].colptr(0), 1);
+			copy_vector(ds.Mi[s1].n_rows, ds.Mi[s1].colptr(p2), 1, U2[s1].colptr(1), 1);
 			
 			K = V2[s1] * U2[s1];
 			K[0] += 1.;
@@ -319,26 +322,26 @@ unsigned int rotate_face_ff(
 		if(!step || accept)
 		{
 			return_value = 3;
-			copy_line((type) 1., (type) 1., ds.Nf[s1], 2, V2[s1].memptr() + 0, ds.Nf[s1], ds.M[s1].memptr() + p1);
-			copy_line((type) 1., (type) 1., ds.Nf[s1], 2, V2[s1].memptr() + 1, ds.Nf[s1], ds.M[s1].memptr() + p2);
+			add_to_vector(V2[s1].n_cols, (type) 1., V2[s1].memptr() + 0, V2[s1].n_rows, ds.M[s1].memptr() + p1, ds.M[s1].n_rows);
+			add_to_vector(V2[s1].n_cols, (type) 1., V2[s1].memptr() + 1, V2[s1].n_rows, ds.M[s1].memptr() + p2, ds.M[s1].n_rows);
 		}
 	}
 	else
 	{
-		V[s1].set_size(ds.Nf[s1]);
-		copy_line_sparse((type) 0., (type) +1., ds.Nf[s1], ds.J[s1].memptr(), ds.psi[s1].n_rows, ds.psi[s1].memptr() + destination1, 1, V[s1].memptr());
-		copy_line_sparse((type) 1., (type) -1., ds.Nf[s1], ds.J[s1].memptr(), ds.psi[s1].n_rows, ds.psi[s1].memptr() + origin1,      1, V[s1].memptr());
+		V[s1].set_size(ds.M[s1].n_cols);
+		copy_vector_sparse(ds.M[s1].n_cols, ds.J[s1].memptr(), ds.psi[s1].memptr() + destination1, ds.psi[s1].n_rows, V[s1].memptr(), V[s1].n_rows);
+		add_to_vector(ds.M[s1].n_cols, (type) -1., ds.M[s1].memptr() + p1, ds.M[s1].n_rows, V[s1].memptr(), V[s1].n_rows);
 		
-		V[s2].set_size(ds.Nf[s2]);
-		copy_line_sparse((type) 0., (type) +1., ds.Nf[s2], ds.J[s2].memptr(), ds.psi[s2].n_rows, ds.psi[s2].memptr() + destination2, 1, V[s2].memptr());
-		copy_line_sparse((type) 1., (type) -1., ds.Nf[s2], ds.J[s2].memptr(), ds.psi[s2].n_rows, ds.psi[s2].memptr() + origin2,      1, V[s2].memptr());
+		V[s2].set_size(ds.M[s2].n_cols);
+		copy_vector_sparse(ds.M[s2].n_cols, ds.J[s2].memptr(), ds.psi[s2].memptr() + destination2, ds.psi[s2].n_rows, V[s2].memptr(), V[s2].n_rows);
+		add_to_vector(ds.M[s2].n_cols, (type) -1., ds.M[s2].memptr() + p2, ds.M[s2].n_rows, V[s2].memptr(), V[s2].n_rows);
 		
 		if(step)
 		{
-			U[s1].set_size(ds.Nf[s1]);
-			copy_line((type) 0., (type) 1., ds.Nf[s1], 1, ds.Mi[s1].colptr(p1), 1, U[s1].memptr());
-			U[s2].set_size(ds.Nf[s2]);
-			copy_line((type) 0., (type) 1., ds.Nf[s2], 1, ds.Mi[s2].colptr(p2), 1, U[s2].memptr());
+			U[s1].set_size(ds.M[s1].n_rows);
+			copy_vector(ds.Mi[s1].n_rows, ds.Mi[s1].colptr(p1), 1, U[s1].memptr(), 1);
+			U[s2].set_size(ds.M[s2].n_rows);
+			copy_vector(ds.Mi[s2].n_rows, ds.Mi[s2].colptr(p2), 1, U[s2].memptr(), 1);
 			
 			det[s1] = 1. + dot(V[s1], U[s1]);
 			det[s2] = 1. + dot(V[s2], U[s2]);
@@ -356,8 +359,8 @@ unsigned int rotate_face_ff(
 		if(!step || accept)
 		{
 			return_value = 4;
-			copy_line((type) 1., (type) 1., ds.Nf[s1], 1, V[s1].memptr(), ds.Nf[s1], ds.M[s1].memptr() + p1);
-			copy_line((type) 1., (type) 1., ds.Nf[s2], 1, V[s2].memptr(), ds.Nf[s2], ds.M[s2].memptr() + p2);
+			add_to_vector(V[s1].n_cols, (type) 1., V[s1].memptr(), V[s1].n_rows, ds.M[s1].memptr() + p1, ds.M[s1].n_rows);
+			add_to_vector(V[s2].n_cols, (type) 1., V[s2].memptr(), V[s2].n_rows, ds.M[s2].memptr() + p2, ds.M[s2].n_rows);
 		}
 	}
 	
@@ -374,68 +377,81 @@ unsigned int rotate_face_ff(
 	return 0;
 }
 
-bool apriori_swap_proposal(const arma::vec& w, const arma::uvec &Jo, const arma::uvec & Je, unsigned int &io, unsigned int &ie)
+template<class type>
+void compute_state_weights(data_structures<type> &ds)
 {
-	double Zo1, Ze1, x, Zo2, Ze2, max_w;
-	arma::vec Wo, We;
+	unsigned int s;
+	for(s = 0; s < 2; s++)
+	{
+		if(ds.w[s].n_rows > 0)
+		{
+			ds.Epw[s] = exp(0.5 * (ds.w[s] -  max(ds.w[s])));
+			ds.Emw[s] = exp(0.5 * (min(ds.w[s]) - ds.w[s]));
+			ds.Zo[s] = accu(ds.Epw[s](ds.J[s]));
+			ds.Ze[s] = accu(ds.Emw[s](ds.K[s]));
+		}
+	}
+}
+
+template<class type>
+bool apriori_swap_proposal(unsigned int s, const data_structures<type> &ds, unsigned int &io, double &Zo2, unsigned int &ie, double &Ze2)
+{
+	double x;
 	
-	max_w = max(w);
-	Wo = w(Jo);
-	We = w(Je);
-	Wo = exp(0.5 * (Wo - max_w));
-	We = exp(0.5 * (max_w - We));
-	Wo = cumsum(Wo);
-	We = cumsum(We);
-	Zo1 = Wo(Wo.n_rows - 1);
-	Ze1 = We(We.n_rows - 1);
-	Wo /= Zo1;
-	We /= Ze1;
-	
-	x = rng::uniform();
+	x = ds.Zo[s] * rng::uniform();
 	io = 0;
-	while(Wo(io) < x) io++;
+	while(x > 0)
+	{
+		x -= ds.Epw[s](ds.J[s](io));
+		io++;
+	}
+	io--;
 	
-	x = rng::uniform();
+	x = ds.Ze[s] * rng::uniform();
 	ie = 0;
-	while(We(ie) < x) ie++;
+	while(x > 0)
+	{
+		x -= ds.Emw[s](ds.K[s](ie));
+		ie++;
+	}
+	ie--;
 	
-	Zo2 = Zo1 - exp(0.5 * (w(Jo(io)) - max_w)) + exp(0.5 * (w(Je(ie)) - max_w));
-	Ze2 = Ze1 - exp(0.5 * (max_w - w(Je(ie)))) + exp(0.5 * (max_w - w(Jo(io))));
+	Zo2 = ds.Zo[s] - ds.Epw[s](ds.J[s](io)) + ds.Epw[s](ds.K[s](ie));
+	Ze2 = ds.Ze[s] - ds.Emw[s](ds.K[s](ie)) + ds.Emw[s](ds.J[s](io));
 	
-	return rng::uniform() < Zo1 * Ze1 / Zo2 / Ze2;	
+	return rng::uniform() < ds.Zo[s] * ds.Ze[s] / Zo2 / Ze2;	
 }
 
 template <class type>
 bool swap_states(unsigned int s, double& amp, data_structures<type> & ds)
 {
 	unsigned int io, ie;
+	double Zo, Ze;
 	type det;
-	arma::uvec e;
-	arma::Col<type> U, buf;
-	arma::Row<type> V;
+	static arma::Col<type> U[2], buf;
+	static arma::Row<type> V[2];
 	
 
-	if(ds.Nf[s] > 0 && apriori_swap_proposal(ds.w[s], ds.J[s], ds.K[s], io, ie))
+	if(ds.Nf[s] > 0 && apriori_swap_proposal(s, ds, io, Zo, ie, Ze))
 	{
+		U[s].set_size(ds.M[s].n_rows);
+		copy_vector_sparse(ds.M[s].n_rows, ds.fermion_edge[s].memptr(), ds.psi[s].colptr(ds.K[s](ie)), 1, U[s].memptr(), 1);
+		add_to_vector(ds.M[s].n_rows, (type) -1., ds.M[s].colptr(io), 1,  U[s].memptr(), 1);
 		
+		V[s].set_size(ds.M[s].n_cols);
+		copy_vector(ds.M[s].n_cols, ds.Mi[s].memptr() + io, ds.Mi[s].n_rows, V[s].memptr(), V[s].n_rows);
 		
-		e << ds.K[s](ie);
-		U = ds.psi[s](ds.fermion_edge[s], e);
-		
-		e << ds.J[s](io);
-		U -= ds.psi[s](ds.fermion_edge[s], e);
-		
-		V = ds.Mi[s].row(io);
-		
-		det = 1. + dot(V, U);
+		det = 1. + dot(V[s], U[s]);
 		
 		amp = abs_squared(det);
 		if(amp > rng::uniform())
 		{
-			ds.M[s].col(io) += U;
-			buf = ds.Mi[s] * U;
-			rank_k_update(-1. / det, buf, V, ds.Mi[s]);
+			add_to_vector(U[s].n_rows, (type) 1., U[s].memptr(), 1, ds.M[s].colptr(io), 1);
+			buf = ds.Mi[s] * U[s];
+			rank_k_update(-1. / det, buf, V[s], ds.Mi[s]);
 			swap(ds.J[s](io), ds.K[s](ie));
+			ds.Zo[s] = Zo;
+			ds.Ze[s] = Ze;
 			return true;
 		}
 	}

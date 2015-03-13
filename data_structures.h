@@ -27,6 +27,9 @@ struct data_structures
 	
 	arma::vec w[2];
 	arma::mat Dw[2];
+	arma::mat Epw[2];
+	arma::vec Emw[2];
+	double Zo[2], Ze[2];
 	
 	arma::uvec J[2], K[2];
 	arma::Mat<type> M[2];  

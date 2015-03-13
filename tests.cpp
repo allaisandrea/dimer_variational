@@ -217,7 +217,7 @@ void test_edge_assignment(const data_structures<type>& ds)
 	
 void test_rotate_face_with_step()
 {
-	unsigned int L = 10, Nu = 10, Nd = 10, c;
+	unsigned int L = 10, Nu = 11, Nd = 9, c;
 	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05, amp, beta = 1;
 	data_structures<double> ds;
 	
@@ -374,29 +374,34 @@ void test_correct_distribution()
 
 void test_apriori_swap_proposal()
 {
-	unsigned int n = 5, no = 3, i, n_measure = 100000, io, ie;
-	double max_w;
-	arma::vec w;
-	arma::uvec Jo, Je;
+	unsigned int n = 5, no = 3, i, n_measure = 10000000, io, ie, s = 1;
 	arma::mat p;
+	double max_w, Zo, Ze;
+	
+	data_structures<double> ds;
 	
 	std::map<arma::uvec, my_pair, classcomp> map;
 	std::map<arma::uvec, my_pair, classcomp>::iterator it;
 	my_pair *pair;
 	
-	w.randn(n);
-	max_w = max(w);
-	Jo = arma::linspace<arma::uvec>(0, no - 1, no);
-	Je = arma::linspace<arma::uvec>(no, n - 1, n - no);
+	ds.w[s].randn(n);
+	ds.J[s] = sort_index(ds.w[s]);
+	ds.K[s] = ds.J[s].rows(no, ds.J[s].n_rows - 1);
+	ds.J[s].resize(no);
+	compute_state_weights(ds);
 	
-	for(i = 0; i < n_measure; i++)
+	max_w = max(ds.w[s]);
+	
+	for(i = s; i < n_measure; i++)
 	{
-		if(apriori_swap_proposal(w, Jo, Je, io, ie))
+		if(apriori_swap_proposal(s, ds, io, Zo, ie, Ze))
 		{
-			swap(Jo(io), Je(ie));
+			swap(ds.J[s](io), ds.K[s](ie));
+			ds.Zo[s] = Zo;
+			ds.Ze[s] = Ze;
 		}
-		pair = &map[Jo];
-		pair->value = exp(max_w - accu(w(Jo)));
+		pair = &map[ds.J[s]];
+		pair->value = exp(max_w - accu(ds.w[s](ds.J[s])));
 		pair->count ++;
 	}
 	
@@ -460,7 +465,7 @@ void test_swap_states()
 	for(c = 0; c < n_skip; c++)
 	{
 		swap_states(rng::uniform_integer(2), amp2, ds);
-		if((c + 1) % (n_skip / 128) == 0)
+// 		if((c + 1) % (n_skip / 128) == 0)
 		{
 			std::cout << "\r" << std::setw(5) << 100 * (c + 1) / n_skip << " %";
 			std::cout.flush();
@@ -698,7 +703,7 @@ void test_monte_carlo_driver()
 
 void test_states_autocorrelation()
 {
-	unsigned int i, j, n_measure = 20000, n_skip = 1000, n_points = 20, n_observables, start_time;
+	unsigned int i, j, n_measure = 10000, n_skip = 1000, n_points = 20, n_observables, start_time;
 	double dmu = 0, t1 = 1., t2 = 0.01, t3 = 0, t4 = 1., beta = 50.;
 	double E, sE;
 	arma::mat F, dZ;
@@ -727,7 +732,7 @@ void test_states_autocorrelation()
 	
 	homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
 	start_time = std::clock();
-	monte_carlo_driver(n_measure, n_skip, true, false, observables, ds, F, dZ, J);
+	monte_carlo_driver(n_measure, n_skip, true, true, observables, ds, F, dZ, J);
 	std::cout << 1. * (std::clock() - start_time) / CLOCKS_PER_SEC << "\n";
 	J[0].save("Ju.bin");
 	J[1].save("Jd.bin");
@@ -744,7 +749,7 @@ void test_rank_1_update()
 	arma::rowvec v;
 	arma::colvec u;
 	
-	int i, start_time, m = 100000, n = 20, inc = 1;
+	int i, start_time, m = 500000, n = 20, inc = 1;
 	double alpha = 1.5;
 	M.randn(n, n);
 	v.randn(n);

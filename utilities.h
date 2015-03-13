@@ -2,7 +2,7 @@
 #define __utilities_h__
 
 template <class type>
-void swap(type &a, type &b)
+inline void swap(type &a, type &b)
 {
 	type c;
 	c = a;
