@@ -1,5 +1,6 @@
 #include <vector>
 #include <ctime>
+#include <iomanip>
 #include "rng.h"
 #include "data_structures.h"
 #include "monte_carlo.h"
@@ -46,6 +47,7 @@ void monte_carlo_driver(
 		dZ.set_size(ds.n_derivatives, n_measure);
 	J[0].set_size(ds.J[0].n_rows, n_measure);
 	J[1].set_size(ds.J[1].n_rows, n_measure);
+	
 	for(i = 0; i < n_measure; i++)
 	{
 		for(j = 0; j < n_skip + 1; j++)
@@ -65,6 +67,7 @@ void monte_carlo_driver(
 		{
 			F(j, i) = observables[j](ds);
 		}
+		
 		J[0].col(i) = ds.J[0];
 		J[1].col(i) = ds.J[1];
 	}

@@ -259,6 +259,8 @@ void homogeneous_state(
 	}
 	w.col(0) *= beta / s;
 	
+	
+	
 	ds.psi[1] = ds.psi[0] = arma::conv_to<arma::Mat<type> >::from(psi.slice(0));
 	ds.w[1] = ds.w[0] = w.col(0);
 	ds.Dpsi[1] = ds.Dpsi[0] = arma::conv_to<arma::Cube<type> >::from(psi.slices(1, 5));

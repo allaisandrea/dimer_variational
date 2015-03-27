@@ -640,7 +640,7 @@ void test_homogeneous_state_derivatives()
 
 void test_monte_carlo_driver()
 {
-	unsigned int i, j, n_measure = 1000, n_skip = 10000, n_points = 20, n_observables;
+	unsigned int i, j, n_measure = 100000, n_skip = 1000, n_points = 20, n_observables;
 	double dmu = 0, t1 = 1., t2 = 0, t3 = 0, t4 = 0.5, beta = 10.;
 	double E, sE;
 	arma::mat F, dZ;
@@ -650,12 +650,12 @@ void test_monte_carlo_driver()
 	data_structures<double> ds;
 	observables_vector_real observables;
 	arma::vec coefficients, buf1, buf2;
+	std::string suffix;
 	
-	
-	
-	ds.L = 10;
-	ds.Nf[0] = 8;
-	ds.Nf[1] = 8;
+	// Doping: 0.1 holes / site => ds.Nf[s] = 0.05 * ds.L * ds.L
+	ds.L = 24;
+	ds.Nf[0] = 29;
+	ds.Nf[1] = 29;
 	
 	observables.push_back(&boson_hopping);
 // 	observables.push_back(&boson_potential);
@@ -676,7 +676,8 @@ void test_monte_carlo_driver()
 		std::cout << "point " << i + 1 << "..." << std::endl;
 		t2 = -0.2 +  0.4 * i / (n_points - 1.);
 		homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
-		monte_carlo_driver(n_measure, n_skip, true, true, observables, ds, F, dZ, J);
+		monte_carlo_driver(n_measure, n_skip, true, false, observables, ds, F, dZ, J);
+		
 		autocorrelations(F, sF.slice(i));
 		for(j = 0; j < n_observables; j++)
 		{
@@ -689,17 +690,13 @@ void test_monte_carlo_driver()
 			EE(1, i, j) = sE;
 		}
 		std::cout << "done\n";
-		sF.save("sF_t2_beta.bin");
-		G.save(  "G_t2_beta.bin");
-		sG.save("sG_t2_beta.bin");
-		EE.save("E1_t2_beta.bin");
+		suffix = "_07";
+		
+		sF.save("sF"+suffix+".bin");
+		G.save("G"+suffix+".bin");
+		sG.save("sG"+suffix+".bin");
+		EE.save("E"+suffix+".bin");
 	}
-	
-
-// 	monte_carlo_driver(n_measure, n_skip, true, observables, ds, F, dZ);
-// 	F.save("F.bin");
-// 	dZ.save("dZ.bin");
-
 }
 
 

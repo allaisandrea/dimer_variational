@@ -396,6 +396,7 @@ bool apriori_swap_proposal(unsigned int s, const data_structures<type> &ds, unsi
 	Epw = ds.Epw[s].memptr();
 	Emw = ds.Emw[s].memptr();
 	
+	
 	x = ds.Zo[s] * rng::uniform();
 	io = 0;
 	while(x > 0)
@@ -404,6 +405,7 @@ bool apriori_swap_proposal(unsigned int s, const data_structures<type> &ds, unsi
 		io++;
 	}
 	io--;
+	
 	
 	x = ds.Ze[s] * rng::uniform();
 	ie = N;
@@ -417,7 +419,10 @@ bool apriori_swap_proposal(unsigned int s, const data_structures<type> &ds, unsi
 	Zo2 = ds.Zo[s] - Epw[io] + Epw[ie];
 	Ze2 = ds.Ze[s] - Emw[ie] + Emw[io];
 	
-	return rng::uniform() < ds.Zo[s] * ds.Ze[s] / Zo2 / Ze2;	
+	
+	x = ds.Zo[s] * ds.Ze[s] / Zo2 / Ze2;
+	
+	return rng::uniform() < x;
 }
 
 template <class type>
