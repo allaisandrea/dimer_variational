@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       157,          7]
-NotebookDataLength[     60707,       1589]
-NotebookOptionsPosition[     59154,       1538]
-NotebookOutlinePosition[     59490,       1553]
-CellTagsIndexPosition[     59447,       1550]
+NotebookDataLength[     63701,       1681]
+NotebookOptionsPosition[     61911,       1623]
+NotebookOutlinePosition[     62247,       1638]
+CellTagsIndexPosition[     62204,       1635]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -1534,10 +1534,95 @@ Cell[BoxData[{
    3.63456113725174*^9}, {3.634919820620543*^9, 3.634919822998135*^9}, 
    3.634920223943725*^9, {3.634927302453231*^9, 3.6349273059607573`*^9}, 
    3.635272506129726*^9}]
+}, Closed]],
+
+Cell[CellGroupData[{
+
+Cell["Minimization", "Section",
+ CellChangeTimes->{{3.636731643220151*^9, 3.6367316448543463`*^9}}],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"SetDirectory", "[", 
+   RowBox[{"NotebookDirectory", "[", "]"}], "]"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{"<<", "ArmaBinary`"}], "\[IndentingNewLine]", 
+ RowBox[{"<<", "ErrorBarPlots`"}]}], "Input"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"Tanh", "[", 
+   RowBox[{
+    RowBox[{"x", "^", "2"}], "+", 
+    RowBox[{"0.2", 
+     RowBox[{"y", "^", "2"}]}], "+", 
+    RowBox[{"0.5", " ", "x", " ", "y"}]}], "]"}], "/.", 
+  RowBox[{"{", 
+   RowBox[{
+    RowBox[{"x", "\[Rule]", "100"}], ",", 
+    RowBox[{"y", "\[Rule]", "0"}]}], "}"}]}]], "Input",
+ CellChangeTimes->{{3.6367320836718407`*^9, 3.6367320954389687`*^9}}],
+
+Cell[BoxData[{
+ RowBox[{
+  RowBox[{"ls", "=", 
+   RowBox[{"ImportArmaBinary", "[", "\"\<p.bin\>\"", "]"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{"Show", "[", "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{"ContourPlot", "[", 
+    RowBox[{
+     RowBox[{"Tanh", "[", 
+      RowBox[{
+       RowBox[{"x", "^", "2"}], "+", 
+       RowBox[{"0.2", 
+        RowBox[{"y", "^", "2"}]}], "+", 
+       RowBox[{"0.5", " ", "x", " ", "y"}]}], "]"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"x", ",", 
+       RowBox[{"-", "2"}], ",", "2"}], "}"}], ",", 
+     RowBox[{"{", 
+      RowBox[{"y", ",", 
+       RowBox[{"-", "2"}], ",", "2"}], "}"}], ",", 
+     RowBox[{"ColorFunction", "\[Rule]", 
+      RowBox[{"ColorData", "[", "\"\<Pastel\>\"", "]"}]}]}], "]"}], ",", 
+   "\[IndentingNewLine]", 
+   RowBox[{"Graphics", "[", 
+    RowBox[{"Table", "[", 
+     RowBox[{
+      RowBox[{"{", 
+       RowBox[{"Transparent", ",", 
+        RowBox[{"EdgeForm", "[", 
+         RowBox[{"Blend", "[", 
+          RowBox[{
+           RowBox[{"{", 
+            RowBox[{"Red", ",", "Black"}], "}"}], ",", 
+           RowBox[{
+            RowBox[{"(", 
+             RowBox[{"i", "-", "1"}], ")"}], "/", 
+            RowBox[{"(", 
+             RowBox[{
+              RowBox[{"Length", "[", "ls", "]"}], "-", "1"}], ")"}]}]}], 
+          "]"}], "]"}], ",", 
+        RowBox[{"Polygon", "[", 
+         RowBox[{"ls", "[", 
+          RowBox[{"[", "i", "]"}], "]"}], "]"}]}], "}"}], ",", 
+      RowBox[{"{", 
+       RowBox[{"i", ",", "1", ",", 
+        RowBox[{"Length", "[", "ls", "]"}]}], "}"}]}], "]"}], "]"}], ",", 
+   "\[IndentingNewLine]", 
+   RowBox[{"ImageSize", "\[Rule]", "1000"}]}], "\[IndentingNewLine]", 
+  "]"}]}], "Input",
+ CellChangeTimes->{{3.636731645927649*^9, 3.636731800394231*^9}, {
+  3.6368052213958187`*^9, 3.6368052461973457`*^9}, {3.6368053815081587`*^9, 
+  3.636805385715068*^9}}],
+
+Cell[BoxData[""], "Input",
+ CellChangeTimes->{{3.636735133550707*^9, 3.636735136605611*^9}}]
 }, Open  ]]
 },
 WindowSize->{1920, 1032},
-WindowMargins->{{Automatic, 0}, {Automatic, 0}},
+WindowMargins->{{0, Automatic}, {Automatic, 0}},
 FrontEndVersion->"9.0 for Linux x86 (64-bit) (February 7, 2013)",
 StyleDefinitions->"Default.nb"
 ]
@@ -1590,6 +1675,13 @@ Cell[40520, 1070, 7654, 191, 451, "Input"],
 Cell[48177, 1263, 917, 25, 121, "Input"],
 Cell[49097, 1290, 5628, 139, 451, "Input"],
 Cell[54728, 1431, 4410, 104, 363, "Input"]
+}, Closed]],
+Cell[CellGroupData[{
+Cell[59175, 1540, 99, 1, 51, "Section"],
+Cell[59277, 1543, 243, 6, 77, "Input"],
+Cell[59523, 1551, 406, 12, 32, "Input"],
+Cell[59932, 1565, 1868, 52, 143, "Input"],
+Cell[61803, 1619, 92, 1, 32, "Input"]
 }, Open  ]]
 }
 ]

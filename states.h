@@ -10,6 +10,7 @@ void homogeneous_state(
 	double t3, 
 	double t4, 
 	double beta,
+	bool compute_derivatives,
 	data_structures<type> &ds);
 
 arma::mat homogeneous_state_hamiltonian(

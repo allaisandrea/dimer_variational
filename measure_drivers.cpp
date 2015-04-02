@@ -74,6 +74,7 @@ void monte_carlo_driver(
 	std::cout << "time: " << 1. * (std::clock() - start_time) / CLOCKS_PER_SEC << "\n";
 }
 
+
 template <class type>
 void autocorrelations(const arma::Mat<type> &F, arma::mat &sF)
 {

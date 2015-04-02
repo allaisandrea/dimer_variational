@@ -10,6 +10,8 @@
 #include "utilities.h"
 #include "observables.h"
 #include "measure_drivers.h"
+#include "minimization.h"
+#include "rng.h"
 
 void test_build_graph()
 {
@@ -28,7 +30,7 @@ void test_homogeneous_state()
 	data_structures<arma::cx_double> ds;
 	ds.L = L;
 	build_graph(ds);
-	homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
+	homogeneous_state(dmu, t1, t2, t3, t4, beta, true, ds);
 // 	ds.psi[0].save("psi.bin"); 
 // 	ds.w[0].save("w.bin");
 }
@@ -72,7 +74,7 @@ void test_rotate_face_no_step()
 	
 	ds.L = L;
 	build_graph(ds);
-	homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
+	homogeneous_state(dmu, t1, t2, t3, t4, beta, true, ds);
 	
 	c = 0;
 	p.set_size(ds.particles.n_rows, 0);
@@ -224,7 +226,7 @@ void test_rotate_face_with_step()
 	
 	ds.L = L;
 	build_graph(ds);
-	homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
+	homogeneous_state(dmu, t1, t2, t3, t4, beta, true, ds);
 	
 	ds.Nf[0] = Nu;
 	ds.Nf[1] = Nd;
@@ -308,7 +310,7 @@ void test_correct_distribution()
 
 	ds.L = L;
 	build_graph(ds);
-	homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
+	homogeneous_state(dmu, t1, t2, t3, t4, beta, true, ds);
 	X.randn(ds.psi[0].n_rows, ds.psi[0].n_cols);
 	eig_sym(w, ds.psi[0], X);
 	ds.psi[1] = ds.psi[0];
@@ -454,7 +456,7 @@ void test_swap_states()
 
 	ds.L = L;
 	build_graph(ds);
-	homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
+	homogeneous_state(dmu, t1, t2, t3, t4, beta, true, ds);
 	X.randn(ds.psi[0].n_rows, ds.psi[0].n_cols);
 	eig_sym(w, ds.psi[0], X);
 	ds.psi[1] = ds.psi[0];
@@ -573,7 +575,7 @@ void test_homogeneous_state_derivatives()
 	{
 		tt << 0. << 1. << 0.2 << 0.0 << 1.0;
 		
-		homogeneous_state(tt(0), tt(1), tt(2), tt(3), tt(4), beta, ds);
+		homogeneous_state(tt(0), tt(1), tt(2), tt(3), tt(4), beta, true, ds);
 		for(s = 0; s < 2; s++)
 		{
 			psi[s] = ds.psi[s];
@@ -583,7 +585,7 @@ void test_homogeneous_state_derivatives()
 		
 		
 		tt += eps * dt.col(i);
-		homogeneous_state(tt(0), tt(1), tt(2), tt(3), tt(4), beta, ds);
+		homogeneous_state(tt(0), tt(1), tt(2), tt(3), tt(4), beta, true, ds);
 		for(s = 0; s< 2; s++)
 		{
 			overlaps.set_size(ds.psi[s].n_cols);
@@ -600,7 +602,7 @@ void test_homogeneous_state_derivatives()
 		
 		
 		tt -= 2. * eps * dt.col(i);
-		homogeneous_state(tt(0), tt(1), tt(2), tt(3), tt(4), beta, ds);
+		homogeneous_state(tt(0), tt(1), tt(2), tt(3), tt(4), beta, true, ds);
 		for(s = 0; s< 2; s++)
 		{
 			overlaps.set_size(ds.psi[s].n_cols);
@@ -675,7 +677,7 @@ void test_monte_carlo_driver()
 	{
 		std::cout << "point " << i + 1 << "..." << std::endl;
 		t2 = -0.2 +  0.4 * i / (n_points - 1.);
-		homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
+		homogeneous_state(dmu, t1, t2, t3, t4, beta, true, ds);
 		monte_carlo_driver(n_measure, n_skip, true, false, observables, ds, F, dZ, J);
 		
 		autocorrelations(F, sF.slice(i));
@@ -729,7 +731,7 @@ void test_states_autocorrelation()
 	rng::seed(1);
 
 	
-	homogeneous_state(dmu, t1, t2, t3, t4, beta, ds);
+	homogeneous_state(dmu, t1, t2, t3, t4, beta, true, ds);
 	start_time = std::clock();
 	monte_carlo_driver(n_measure, n_skip, true, true, observables, ds, F, dZ, J);
 	std::cout << 1. * (std::clock() - start_time) / CLOCKS_PER_SEC << "\n";
@@ -773,4 +775,35 @@ void test_rank_1_update()
 		rank_1_update(alpha, u, v, M);
 	}
 	std::cout << 1. * (std::clock() - start_time) / CLOCKS_PER_SEC << "\n";
+}
+
+void f(const arma::vec& x, arma::vec& y, void *_p)
+{
+	double y0;
+	y0 = tanh(x(0) * x(0) + 0.2 * x(1) * x(1) + 0.5 * x(0) * x(1));
+	y.randn(20);
+	y = 0.1 * y + y0;
+}
+
+void f(const arma::vec& x, arma::running_stat<double> & y, void *_p)
+{
+	unsigned int i;
+	double y0;
+	y0 = tanh(x(0) * x(0) + 0.2 * x(1) * x(1) + 0.5 * x(0) * x(1));
+	for(i = 0; i < 20; i++)
+	{
+		y(y0 + 0.1 * rng::gaussian());
+	}
+}
+
+double f0(const arma::vec& x)
+{
+	return tanh(x(0) * x(0) + 0.2 * x(1) * x(1) + 0.5 * x(0) * x(1));
+}
+
+void test_minimization()
+{
+	arma::mat p(2, 3);
+	p.randn();
+	simplex_minimize(p, f, (void *) &f0);
 }

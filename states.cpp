@@ -141,10 +141,11 @@ void homogeneous_state(
 	double t3, 
 	double t4,
 	double beta,
+	bool compute_derivatives,
 	data_structures<type> &ds)
 {
 	const double pi = 3.141592653589793;
-	unsigned int i, j, c, k, q, L, d;
+	unsigned int i, j, c, k, q, L, d, nd;
 	double kk, qq, nm1, nm2, s, Ds, m;
 	arma::cube h, v, psi;
 	arma::mat U, wk, w;
@@ -153,12 +154,18 @@ void homogeneous_state(
 	L = ds.L;
 	
 	U = plane_waves(L);
-	w.set_size(2 * L * L, 6);
-	psi.zeros(2 * L * L, 2 * L * L, 6);	
+	if(compute_derivatives)
+		nd = 6;
+	else
+		nd = 1;
+
+	w.set_size(2 * L * L, nd);
+	psi.zeros(2 * L * L, 2 * L * L, nd);
+	
+	v.set_size(2, 2, nd);
+	wk.set_size(2, nd);
 	
 	h.set_size(2, 2, 6);
-	v.set_size(2, 2, 6);
-	wk.set_size(2, 6);
 	
 	j = 0;
 	c = 0;
@@ -199,7 +206,8 @@ void homogeneous_state(
 		eig_sym(vbuf, v.slice(0), h.slice(0));
 		
 		wk.col(0) = vbuf;
-		for(d = 1; d < 6; d++)
+		
+		for(d = 1; d < nd; d++)
 		{
 			eigensystem_variation(v.slice(0), wk.col(0), h.slice(d), v.slice(d), vbuf);
 			wk.col(d) = vbuf;
@@ -212,7 +220,7 @@ void homogeneous_state(
 			
 			if(nm1 > 1.e-7 && nm2 > 1.e-7)
 			{
-				for(d = 0; d < 6; d++)
+				for(d = 0; d < nd; d++)
 				{
 					w(c    , d) = wk(0, d);
 					w(c + 1, d) = wk(1, d);
@@ -223,14 +231,14 @@ void homogeneous_state(
 			}
 			else if(nm1 > 1.e-7)
 			{
-				for(d = 0; d < 6; d++)
+				for(d = 0; d < nd; d++)
 					w(c, d) = h(0, 0, d);
 				psi.slice(0).col(c) = U.col(j);
 				c++;
 			}
 			else if(nm2 > 1.e-7)
 			{
-				for(d = 0; d < 6; d++)
+				for(d = 0; d < nd; d++)
 					w(c, d) = h(1, 1, d);
 				psi.slice(0).col(c) = U.col(j + 1);
 				c++;
@@ -252,7 +260,7 @@ void homogeneous_state(
 	
 	s = stddev(w.col(0));
 	m = mean(w.col(0));
-	for(d = 1; d < 6; d++)
+	for(d = 1; d < nd; d++)
 	{
 		Ds = accu((w.col(0) - m) % w.col(d)) / (w.n_rows - 1);
 		w.col(d) = beta * (w.col(d) / s - w.col(0) * Ds / s / s / s);
@@ -263,12 +271,15 @@ void homogeneous_state(
 	
 	ds.psi[1] = ds.psi[0] = arma::conv_to<arma::Mat<type> >::from(psi.slice(0));
 	ds.w[1] = ds.w[0] = w.col(0);
-	ds.Dpsi[1] = ds.Dpsi[0] = arma::conv_to<arma::Cube<type> >::from(psi.slices(1, 5));
-	ds.Dw[1] = ds.Dw[0] = w.cols(1, 5);
 	ds.phi.ones(2 * L * L);
-	ds.Dphi.zeros(2 * L * L, 5);
-	ds.n_derivatives = 5;
 	
+	if(compute_derivatives)
+	{
+		ds.Dpsi[1] = ds.Dpsi[0] = arma::conv_to<arma::Cube<type> >::from(psi.slices(1, 5));
+		ds.Dw[1] = ds.Dw[0] = w.cols(1, 5);
+		ds.Dphi.zeros(2 * L * L, 5);
+	}
+	ds.n_derivatives = nd - 1;
 }
 
 
@@ -280,6 +291,7 @@ void homogeneous_state<double>(
 	double t3, 
 	double t4, 
 	double beta,
+	bool compute_derivatives,
 	data_structures<double> &ds);
 
 template
@@ -290,4 +302,5 @@ void homogeneous_state<arma::cx_double>(
 	double t3,
 	double t4, 
 	double beta,
+	bool compute_derivatives,
 	data_structures<arma::cx_double> &ds);
