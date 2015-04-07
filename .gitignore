@@ -2,3 +2,4 @@
 *.bin
 run
 doc
+interface.h

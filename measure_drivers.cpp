@@ -1,4 +1,4 @@
-#include <vector>
+#include "measure_drivers.h"
 #include <ctime>
 #include <iomanip>
 #include "rng.h"
@@ -70,6 +70,53 @@ void monte_carlo_driver(
 		
 		J[0].col(i) = ds.J[0];
 		J[1].col(i) = ds.J[1];
+	}
+	std::cout << "time: " << 1. * (std::clock() - start_time) / CLOCKS_PER_SEC << "\n";
+}
+
+
+template <class type>
+void monte_carlo_driver(
+	unsigned int n_measure,
+	unsigned int n_skip,
+	bool shuffle_states,
+	const std::vector< type (*)(const data_structures<type> &ds) > &observables,
+	const arma::vec& coefficients,
+	data_structures<type> &ds,
+	running_stat<double> &E)
+{
+	unsigned int i, ii, j, n_thermalize, start_time;
+	double dummy, Ei, dE;
+	
+	
+	start_time = std::clock();
+	initial_configuration(ds);
+	std::cout << "time: " << 1. * (std::clock() - start_time) / CLOCKS_PER_SEC << "\n";
+	
+	start_time = std::clock();
+	n_thermalize = round(0.05 * n_measure);
+	
+	for(i = 0; i < n_measure + n_thermalize; i++)
+	{
+		for(j = 0; j < n_skip + 1; j++)
+		{
+			rotate_face(rng::uniform_integer(ds.n_faces), rng::uniform_integer(2), true, dummy, ds);
+			if(shuffle_states && j % 10 == 0)
+			{
+				swap_states(rng::uniform_integer(2), dummy, ds);
+			}
+		}
+		
+		if(i >= n_thermalize)
+		{
+			Ei = 0.;
+			for(j = 0; j < observables.size(); j++)
+			{
+				Ei += coefficients(j) * real(observables[j](ds));
+			}
+			E(Ei);
+		}
+		
 	}
 	std::cout << "time: " << 1. * (std::clock() - start_time) / CLOCKS_PER_SEC << "\n";
 }
@@ -184,6 +231,25 @@ void monte_carlo_driver<arma::cx_double>(
 	arma::Mat<arma::cx_double> &dZ,
 	arma::umat *J);
 
+template
+void monte_carlo_driver<double>(
+	unsigned int n_measure,
+	unsigned int n_skip,
+	bool shuffle_states,
+	const std::vector< double (*)(const data_structures<double> &ds) > &observables,
+	const arma::vec& coefficients,
+	data_structures<double> &ds,
+	running_stat<double> &E);
+
+template
+void monte_carlo_driver<arma::cx_double>(
+	unsigned int n_measure,
+	unsigned int n_skip,
+	bool shuffle_states,
+	const std::vector< arma::cx_double (*)(const data_structures<arma::cx_double> &ds) > &observables,
+	const arma::vec& coefficients,
+	data_structures<arma::cx_double> &ds,
+	running_stat<double> &E);
 
 template
 void autocorrelations<double>(const arma::Mat<double> &F, arma::mat &sF);

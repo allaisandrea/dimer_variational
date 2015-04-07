@@ -12,6 +12,7 @@
 #include "measure_drivers.h"
 #include "minimization.h"
 #include "rng.h"
+#include "running_stat.h"
 
 void test_build_graph()
 {
@@ -777,15 +778,7 @@ void test_rank_1_update()
 	std::cout << 1. * (std::clock() - start_time) / CLOCKS_PER_SEC << "\n";
 }
 
-void f(const arma::vec& x, arma::vec& y, void *_p)
-{
-	double y0;
-	y0 = tanh(x(0) * x(0) + 0.2 * x(1) * x(1) + 0.5 * x(0) * x(1));
-	y.randn(20);
-	y = 0.1 * y + y0;
-}
-
-void f(const arma::vec& x, arma::running_stat<double> & y, void *_p)
+void f(const arma::vec& x, running_stat<double> & y, double &p)
 {
 	unsigned int i;
 	double y0;
@@ -796,14 +789,117 @@ void f(const arma::vec& x, arma::running_stat<double> & y, void *_p)
 	}
 }
 
-double f0(const arma::vec& x)
-{
-	return tanh(x(0) * x(0) + 0.2 * x(1) * x(1) + 0.5 * x(0) * x(1));
-}
-
 void test_minimization()
 {
+	double x;
 	arma::mat p(2, 3);
 	p.randn();
-	simplex_minimize(p, f, (void *) &f0);
+	simplex_minimize<double>(p, f, x);
+}
+
+void test_running_stat()
+{
+	unsigned int i, j;
+	running_stat<double> rs1, rs2;
+	arma::vec x1, x2, x3;
+	
+	x1.randn(10);
+	x2.randn(15);
+	
+	for(i = 0; i < x1.n_rows; i++)
+		rs1(x1(i));
+	
+	for(i = 0; i < x2.n_rows; i++)
+		rs2(x2(i));
+	
+	std::cout << mean(x1) << "\n";
+	std::cout << rs1.mean() << "\n";
+	std::cout << var(x1, 1) << "\n";
+	std::cout << rs1.second_moment() << "\n";
+	
+	rs1(rs2);
+	std::cout << mean(join_cols(x1, x2)) << "\n";
+	std::cout << rs1.mean() << "\n";
+	std::cout << var(join_cols(x1, x2), 1) << "\n";
+	std::cout << rs1.second_moment() << "\n";
+	
+	rs2.reset();
+	x3.randn(7);
+	for(i = 0; i < x3.n_rows; i++)
+		rs2(x3(i));
+	
+	rs1(rs2);
+	std::cout << mean(join_cols(join_cols(x1, x2), x3)) << "\n";
+	std::cout << rs1.mean() << "\n";
+	std::cout << var(join_cols(join_cols(x1, x2), x3), 1) << "\n";
+	std::cout << rs1.second_moment() << "\n";
+}
+
+struct test_params
+{
+	unsigned int n_measure;
+	unsigned int n_dim;
+};
+
+void h_parallel(const arma::vec& x, running_stat<double> & y, test_params &p)
+{
+	unsigned int i;
+	double y0;
+	y0 = tanh(x(0) * x(0) + 0.2 * x(1) * x(1) + 0.5 * x(0) * x(1));
+	for(i = 0; i < p.n_measure; i++)
+	{
+		y(y0 + 0.1 * rng::gaussian());
+	}
+}
+
+void f_parallel(const arma::vec& x, running_stat<double> & y, test_params &p)
+{
+	running_stat<double> yy[1];
+	arma::vec xx;
+	xx = x;
+	MPI_Send(xx.memptr(), xx.n_elem * sizeof(double), MPI_BYTE, 1, 1, MPI_COMM_WORLD);
+	h_parallel(x, y, p);
+	MPI_Recv(&yy[0], sizeof(yy[0]), MPI_BYTE, 1, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	y(yy[0]);
+}
+
+
+void test_minimization_parallel()
+{
+	int rank;
+	
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	
+	if(rank == 0)
+	{
+		test_params p;
+		arma::mat x0(2, 3);
+		p.n_measure = 20;
+		p.n_dim = 2;
+		
+		MPI_Send(&p, sizeof(p), MPI_BYTE, 1, 1, MPI_COMM_WORLD);
+		
+		x0.randn();
+		simplex_minimize<test_params>(x0, f_parallel, p);
+	}
+	else
+	{
+		test_params p;
+		arma::vec x;
+		running_stat<double> y;
+		MPI_Recv(&p, sizeof(p), MPI_BYTE, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		
+		x.set_size(p.n_dim);
+		
+		while(true)
+		{
+			MPI_Recv(x.memptr(), x.n_elem * sizeof(double), MPI_BYTE, 0, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+			
+			y.reset();
+			h_parallel(x, y, p);
+			
+			MPI_Send(&y, sizeof(y), MPI_BYTE, 0, 1, MPI_COMM_WORLD);
+		}
+		
+	}
 }

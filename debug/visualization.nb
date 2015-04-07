@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       157,          7]
-NotebookDataLength[     63701,       1681]
-NotebookOptionsPosition[     61911,       1623]
-NotebookOutlinePosition[     62247,       1638]
-CellTagsIndexPosition[     62204,       1635]
+NotebookDataLength[     63250,       1666]
+NotebookOptionsPosition[     61502,       1609]
+NotebookOutlinePosition[     61837,       1624]
+CellTagsIndexPosition[     61794,       1621]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -1549,20 +1549,6 @@ Cell[BoxData[{
  RowBox[{"<<", "ArmaBinary`"}], "\[IndentingNewLine]", 
  RowBox[{"<<", "ErrorBarPlots`"}]}], "Input"],
 
-Cell[BoxData[
- RowBox[{
-  RowBox[{"Tanh", "[", 
-   RowBox[{
-    RowBox[{"x", "^", "2"}], "+", 
-    RowBox[{"0.2", 
-     RowBox[{"y", "^", "2"}]}], "+", 
-    RowBox[{"0.5", " ", "x", " ", "y"}]}], "]"}], "/.", 
-  RowBox[{"{", 
-   RowBox[{
-    RowBox[{"x", "\[Rule]", "100"}], ",", 
-    RowBox[{"y", "\[Rule]", "0"}]}], "}"}]}]], "Input",
- CellChangeTimes->{{3.6367320836718407`*^9, 3.6367320954389687`*^9}}],
-
 Cell[BoxData[{
  RowBox[{
   RowBox[{"ls", "=", 
@@ -1621,7 +1607,7 @@ Cell[BoxData[""], "Input",
  CellChangeTimes->{{3.636735133550707*^9, 3.636735136605611*^9}}]
 }, Open  ]]
 },
-WindowSize->{1920, 1032},
+WindowSize->{1274, 773},
 WindowMargins->{{0, Automatic}, {Automatic, 0}},
 FrontEndVersion->"9.0 for Linux x86 (64-bit) (February 7, 2013)",
 StyleDefinitions->"Default.nb"
@@ -1679,9 +1665,8 @@ Cell[54728, 1431, 4410, 104, 363, "Input"]
 Cell[CellGroupData[{
 Cell[59175, 1540, 99, 1, 51, "Section"],
 Cell[59277, 1543, 243, 6, 77, "Input"],
-Cell[59523, 1551, 406, 12, 32, "Input"],
-Cell[59932, 1565, 1868, 52, 143, "Input"],
-Cell[61803, 1619, 92, 1, 32, "Input"]
+Cell[59523, 1551, 1868, 52, 143, "Input"],
+Cell[61394, 1605, 92, 1, 32, "Input"]
 }, Open  ]]
 }
 ]
