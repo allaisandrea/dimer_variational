@@ -1,0 +1,190 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 9.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       157,          7]
+NotebookDataLength[      7099,        181]
+NotebookOptionsPosition[      6864,        168]
+NotebookOutlinePosition[      7199,        183]
+CellTagsIndexPosition[      7156,        180]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+Cell[BoxData[{
+ RowBox[{"<<", "InputOutputInterface`"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"SetDirectory", "[", 
+   RowBox[{"NotebookDirectory", "[", "]"}], "]"}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"items1", "=", 
+   RowBox[{"{", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<L\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<Nu\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<Nd\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<seed\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<n_measure\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<n_skip\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<beta\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], "}"}],
+        ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<dx\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], 
+        "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<x0\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Vector\>\""}], 
+        "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<coefficients\>\"", ",", "\"\<Real64\>\"", ",", 
+         "\"\<Vector\>\""}], "}"}]}], "}"}], ",", "\[IndentingNewLine]", 
+     RowBox[{"{", 
+      RowBox[{"{", 
+       RowBox[{
+       "\"\<simplexes\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Matrix\>\""}], 
+       "}"}], "}"}]}], "\[IndentingNewLine]", "}"}]}], 
+  ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"items2", "=", 
+   RowBox[{"{", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<L\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<Nu\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<Nd\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<seed\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<n_measure\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<n_skip\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<observables\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Vector\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<coefficients\>\"", ",", "\"\<Real64\>\"", ",", 
+         "\"\<Vector\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<dmu\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}],
+         "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<t1\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], 
+        "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<t2\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], 
+        "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<t3\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], 
+        "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<t4\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], 
+        "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<beta\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], 
+        "}"}]}], "\[IndentingNewLine]", "}"}], ",", "\[IndentingNewLine]", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<autocorrelation\>\"", ",", "\"\<Real64\>\"", ",", 
+         "\"\<Vector\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<E\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Vector\>\""}], 
+        "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<G\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Vector\>\""}], 
+        "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<sG\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Matrix\>\""}], 
+        "}"}]}], "\[IndentingNewLine]", "}"}]}], "\[IndentingNewLine]", 
+    "}"}]}], ";"}], "\[IndentingNewLine]", 
+ RowBox[{"CreateInterfaces", "[", 
+  RowBox[{"\"\<Interface\>\"", ",", 
+   RowBox[{"{", 
+    RowBox[{"items1", ",", "items2"}], "}"}]}], 
+  "]"}], "\[IndentingNewLine]", 
+ RowBox[{"Clear", "[", 
+  RowBox[{"items1", ",", " ", "items2"}], "]"}]}], "Input",
+ CellChangeTimes->{{3.637408835351694*^9, 3.637408931597221*^9}, {
+  3.637408968506605*^9, 3.637409047716381*^9}, {3.637416882578767*^9, 
+  3.637417019857373*^9}, {3.6374282933159237`*^9, 3.637428321671176*^9}, {
+  3.6374283954932823`*^9, 3.63742839639607*^9}, {3.637428426910707*^9, 
+  3.637428463092629*^9}, {3.637428534795907*^9, 3.637428552019341*^9}, {
+  3.637428818262662*^9, 3.6374288523209143`*^9}, {3.63742913696001*^9, 
+  3.637429138148439*^9}, {3.6374893603129377`*^9, 3.637489399164275*^9}, {
+  3.6375954567271767`*^9, 3.637595475214221*^9}, {3.6375955124391203`*^9, 
+  3.637595523927043*^9}, {3.6375985114205723`*^9, 3.637598523200521*^9}, {
+  3.63801435330128*^9, 3.6380143982010202`*^9}, {3.638202527583334*^9, 
+  3.6382025588024883`*^9}, {3.6382025941621027`*^9, 3.6382026346167088`*^9}}]
+},
+WindowSize->{954, 1025},
+WindowMargins->{{Automatic, 0}, {Automatic, 0}},
+FrontEndVersion->"9.0 for Linux x86 (64-bit) (February 7, 2013)",
+StyleDefinitions->"Default.nb"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[557, 20, 6303, 146, 869, "Input"]
+}
+]
+*)
+
+(* End of internal cache information *)

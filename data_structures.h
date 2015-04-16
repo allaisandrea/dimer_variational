@@ -44,12 +44,12 @@ struct data_structures
 		if(is_up(p0))
 		{
 			p = p0 - 2;
-			s = 1;
+			s = 0;
 		}
 		else if(is_dn(p0))
 		{
 			p = p0 - 2 - Nf[0];
-			s = 0;
+			s = 1;
 		}
 		else
 			throw std::logic_error("Particle is not a fermion");

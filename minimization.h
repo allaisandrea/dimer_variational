@@ -1,6 +1,10 @@
 #ifndef __minimization_h__
 #define __minimization_h__
 #include <armadillo>
+#include <ctime>
+#include "utilities.h"
+
+extern time_t start_time;
 
 template <class parameters_t>
 int compare(
@@ -15,7 +19,7 @@ int compare(
 	parameters_t &param)
 {
 	double x, s1, s2;
-
+	
 	arma::vec vbuf;
 	if(v1.count() < 2)
 		f(x1, v1, param);
@@ -25,6 +29,7 @@ int compare(
 	s1 = v1.variance_of_the_mean();
 	s2 = v2.variance_of_the_mean();
 	x = (v1.mean() - v2.mean()) / sqrt(s1 + s2);
+	std::cout << elapsed_time_string() << " \t" << v1.count() << " " << v2.count() << " " <<  x << std::endl;
 	
 	while(fabs(x) < 4.)
 	{
@@ -36,6 +41,7 @@ int compare(
 		s1 = v1.variance_of_the_mean();
 		s2 = v2.variance_of_the_mean();
 		x = (v1.mean() - v2.mean()) / sqrt(s1 + s2);
+		std::cout << elapsed_time_string() << " \t" << v1.count() << " " << v2.count() << " " <<  x << std::endl;
 	}
 	
 	if(x < 0.)
@@ -62,14 +68,13 @@ void simplex_minimize(
 		parameters_t &), 
 	parameters_t & param)
 {
-	unsigned int it, max_it = 20, n_dim, i;
+	unsigned int it, max_it = 20, n_dim, i, j;
 	int icomp, icomp1;
 	unsigned int i_low, i_high;
 	arma::vec sum, try_point, try_point1;
 	running_stat<double> try_value, try_value1;
 	arma::field<arma::vec> points;
 	arma::field<running_stat<double> > values;
-	arma::cube p_save;
 	
 	n_dim = _points.n_rows;
 	if(_points.n_cols != n_dim + 1)
@@ -84,10 +89,10 @@ void simplex_minimize(
 		sum += points[i];
 	}
 	
-	p_save.zeros(n_dim, n_dim + 1, max_it);
+	param.simplexes.zeros((n_dim + 2) * (n_dim + 1), max_it);
 	for(it = 0; it < max_it; it++)
 	{
-		std::cout << "Find lowest and highest.\n";
+		std::cout << elapsed_time_string() << " Find lowest and highest." << std::endl;
 		i_low = i_high = 0;
 		for(i = 1; i < n_dim + 1; i++)
 		{
@@ -100,31 +105,36 @@ void simplex_minimize(
 				i_high = i;
 		}
 		
+		std::cout << elapsed_time_string() << " lowest:";
+		std::cout << std::fixed << std::setprecision(6);
+		std::cout << std::setw(10) << values[i_low].mean();
+		std::cout << std::setw(10) << sqrt(values[i_low].variance_of_the_mean());
+		std::cout << std::endl;
 		
 		try_value.reset();
 		try_point = simplex_reflect(-1., sum, points[i_high]);
-		std::cout << "try:\n" << try_point << "\n";
+		std::cout << elapsed_time_string() << " try:" << trans(try_point);
 		
-		std::cout << "try < lowest?\n";
+		std::cout << elapsed_time_string() << " try < lowest?" << std::endl;
 		icomp = compare(try_point, try_value, points[i_low], values[i_low], f, param);
 		if(icomp < 0)
 		{
-			std::cout << "Yes.\n";
+			std::cout << elapsed_time_string() << " Yes." << std::endl;
 			try_value1.reset();
 			try_point1 = simplex_reflect(-2., sum, points[i_high]);
-			std::cout << "try1: " << trans(try_point1) << "";
-			std::cout << "try1 < try?\n";
+			std::cout << elapsed_time_string() << " try1: " << trans(try_point1);
+			std::cout << elapsed_time_string() << " try1 < try?" << std::endl;
 			icomp1 = compare(try_point1, try_value1, try_point, try_value, f, param);
 			if(icomp1 < 0)
 			{
-				std::cout << "Yes. Expanding.\n";
+				std::cout << elapsed_time_string() << " Yes. Expanding." << std::endl;
 				sum += try_point1 - points[i_high];
 				points[i_high] = try_point1;
 				values[i_high] = try_value1;
 			}
 			else
 			{
-				std::cout << "No. Reflecting.\n";
+				std::cout << elapsed_time_string() << "No. Reflecting." << std::endl;
 				sum += try_point - points[i_high];
 				points[i_high] = try_point;
 				values[i_high] = try_value;
@@ -132,34 +142,34 @@ void simplex_minimize(
 		}
 		else
 		{
-			std::cout << "No.\n";
-			std::cout << "try < highest?\n";
+			std::cout << elapsed_time_string() << " No." << std::endl;
+			std::cout << elapsed_time_string() << " try < highest?" << std::endl;
 			icomp = compare(try_point, try_value, points[i_high], values[i_high], f, param);
 			if(icomp < 0)
 			{
-				std::cout << "Yes. Reflecting\n";
+				std::cout << elapsed_time_string()<< " Yes. Reflecting" << std::endl;
 				sum += try_point - points[i_high];
 				points[i_high] = try_point;
 				values[i_high] = try_value;
 			}
 			else
 			{
-				std::cout << "No.\n";
+				std::cout << elapsed_time_string() << " No." << std::endl;
 				try_value1.reset();
 				try_point1 = simplex_reflect(0.5, sum, points[i_high]);
-				std::cout << "try1: " << trans(try_point1) << "";
-				std::cout << "try1 < highest?\n";
+				std::cout << elapsed_time_string() << " try1: " << trans(try_point1);
+				std::cout << elapsed_time_string() << " try1 < highest?" << std::endl;
 				icomp1 = compare(try_point1, try_value1, points[i_high], values[i_high], f, param);
 				if(icomp1 < 0)
 				{
-					std::cout << "Yes. Contracting 1\n";
+					std::cout << elapsed_time_string() << " Yes. Contracting 1" << std::endl;
 					sum += try_point1 - points[i_high];
 					points[i_high] = try_point1;
 					values[i_high] = try_value1;
 				}
 				else
 				{
-					std::cout << "No. Contracting all\n";
+					std::cout << elapsed_time_string() << " No. Contracting all" << std::endl;
 					sum.zeros();
 					for(i = 0; i < n_dim + 1; i++)
 					{
@@ -174,8 +184,14 @@ void simplex_minimize(
 			}
 		}
 		for(i = 0; i < n_dim + 1; i++)
-			p_save.slice(it).col(i) = points[i];
-		p_save.save("p.bin");
+		{
+			for(j = 0; j < n_dim; j++)
+				param.simplexes(j + (n_dim + 2) * i, it) = points[i](j);
+			param.simplexes(j + (n_dim + 2) * i, it) = values[i].mean();
+			j++;
+			param.simplexes(j + (n_dim + 2) * i, it) = sqrt(values[i].variance_of_the_mean());
+		}
+		param.write();
 	}
 }
 

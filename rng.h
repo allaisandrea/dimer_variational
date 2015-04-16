@@ -13,6 +13,11 @@ public:
 		gsl_rng_set(r, s);
 	}
 	
+	static unsigned long int get()
+	{
+		return gsl_rng_get(r);
+	}
+	
 	static unsigned long int uniform_integer(unsigned long int n)
 	{
 		return gsl_rng_uniform_int(r, n);

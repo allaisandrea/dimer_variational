@@ -1,16 +1,18 @@
 local: CXX = mpiCC
 local: CXXFLAGS = -g 
 local: LIBS = -llapack -lblas -lgsl -lcblas
-local: OUTPUT = debug/run
+local: OUTPUT = ../debug/run
 
-cluster: CXX = g++
+cluster: CXX = mpiCC
 cluster: LIBDIR = /n/home06/allais/lib
 cluster: INCLUDEDIR = /n/home06/allais/include
-cluster: CXXFLAGS = -O3 -D ARMA_NO_DEBUG -I $(INCLUDEDIR)
+cluster: CXXFLAGS = -D ARMA_NO_DEBUG -I $(INCLUDEDIR)
 cluster: LIBS = -llapack -lgsl -lgslcblas
 cluster: OUTPUT = ./run
 
-OBJECTS = main.o data_structures.o states.o monte_carlo.o linear_algebra.o observables.o measure_drivers.o
+OBJECTS = main.o data_structures.o states.o monte_carlo.o \
+	linear_algebra.o observables.o measure_drivers.o \
+	single_point_drivers.o
 
 local: $(OBJECTS) $(OBJECTS1)
 	$(CXX) $(CXXFLAGS) $(OBJECTS) -o $(OUTPUT) $(LIBS)
