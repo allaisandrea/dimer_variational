@@ -49,15 +49,15 @@ void monte_carlo_driver(
 			
 			di_print = n_measure / 100;
 			if(di_print == 0) di_print = 1;
-			if((ii + 1) % di_print == 0)
-				std::cout << elapsed_time_string() << ":" << std::setw(5) << round(100. * (ii + 1) / n_measure) << " %" << std::endl;
+// 			if((ii + 1) % di_print == 0)
+// 				std::cout << elapsed_time_string() << ":" << std::setw(5) << round(100. * (ii + 1) / n_measure) << " %" << std::endl;
 		}
 		else
 		{
 			di_print = n_thermalize / 5;
 			if(di_print == 0) di_print = 1;
-			if((i + 1) % di_print == 0)
-				std::cout << elapsed_time_string() << ":" << std::setw(5) << round(100. * (i + 1) / n_thermalize) << " %" << std::endl;
+// 			if((i + 1) % di_print == 0)
+// 				std::cout << elapsed_time_string() << ":" << std::setw(5) << round(100. * (i + 1) / n_thermalize) << " %" << std::endl;
 		}
 	}
 	
@@ -83,7 +83,7 @@ void monte_carlo_driver(
 	data_structures<type> &ds,
 	std::vector<running_stat<double> >& F)
 {
-	unsigned int i, ii, j, n_thermalize;
+	unsigned int i, ii, j, n_thermalize, di_print;
 	double dummy;
 	
 	initial_configuration(ds);
@@ -99,10 +99,24 @@ void monte_carlo_driver(
 		
 		if(i >= n_thermalize)
 		{
+			ii = i - n_thermalize;
+			
 			for(j = 0; j < observables.size(); j++)
 			{
 				F[j](real(observables[j](ds)));
 			}
+			
+			di_print = n_measure / 100;
+			if(di_print == 0) di_print = 1;
+			if((ii + 1) % di_print == 0)
+				std::cout << elapsed_time_string() << ":" << std::setw(5) << round(100. * (ii + 1) / n_measure) << " %" << std::endl;
+		}
+		else
+		{
+			di_print = n_thermalize / 5;
+			if(di_print == 0) di_print = 1;
+			if((i + 1) % di_print == 0)
+				std::cout << elapsed_time_string() << ":" << std::setw(5) << round(100. * (i + 1) / n_thermalize) << " %" << std::endl;
 		}
 	}
 }

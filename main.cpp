@@ -2,8 +2,8 @@
 #include <mpi.h>
 #include <ctime>
 #include "rng.h"
-#include "tests.cpp"
-#include "minimization_drivers.h"
+#include "test_minimization_gradient.cpp"
+#include "minimization_gradient_drivers.h"
 #include "single_point_drivers.h"
 #include "utilities.h"
 
@@ -27,7 +27,7 @@ int main(int argc, char** argv)
 			
 			interface_1 p1;
 			p1.read(argv[1]);
-// 			driver_minimize(p1);
+			driver_minimize(p1);
 			
 			MPI_Finalize();
 		}
@@ -60,7 +60,8 @@ int main(int argc, char** argv)
 // 		test_minimization_parallel();
 // 		test_distribution_1();
 // 		test_gradient_stat_1();
-		test_running_stat();
+// 		test_running_stat();
+		test_minimization_gradient();
 	}
 	return 0x0;
 }
