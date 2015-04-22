@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       157,          7]
-NotebookDataLength[      6550,        177]
-NotebookOptionsPosition[      6315,        164]
-NotebookOutlinePosition[      6650,        179]
-CellTagsIndexPosition[      6607,        176]
+NotebookDataLength[      6816,        183]
+NotebookOptionsPosition[      6581,        170]
+NotebookOutlinePosition[      6916,        185]
+CellTagsIndexPosition[      6873,        182]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -72,17 +72,22 @@ Cell[BoxData[{
         ",", "\[IndentingNewLine]", 
        RowBox[{"{", 
         RowBox[{
-        "\"\<accuracy\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], 
-        "}"}], ",", "\[IndentingNewLine]", 
+        "\"\<max_count\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
        RowBox[{"{", 
         RowBox[{"\"\<x0\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Vector\>\""}], 
         "}"}]}], "}"}], ",", "\[IndentingNewLine]", 
      RowBox[{"{", 
-      RowBox[{"{", 
-       RowBox[{
-       "\"\<simplexes\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Matrix\>\""}], 
-       "}"}], "}"}]}], "\[IndentingNewLine]", "}"}]}], 
-  ";"}], "\[IndentingNewLine]", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<points\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Matrix\>\""}], 
+        "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<values\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Matrix\>\""}], 
+        "}"}]}], "\[IndentingNewLine]", "}"}]}], "\[IndentingNewLine]", 
+    "}"}]}], ";"}], "\[IndentingNewLine]", 
  RowBox[{
   RowBox[{"items2", "=", 
    RowBox[{"{", "\[IndentingNewLine]", 
@@ -154,12 +159,13 @@ Cell[BoxData[{
  RowBox[{"Clear", "[", 
   RowBox[{"items1", ",", " ", "items2"}], "]"}]}], "Input",
  CellChangeTimes->CompressedData["
-1:eJxTTMoPSmViYGAQBmIQLeKY3XFO8rVjvkzxFBAtYyYwE0TPePNtEYh2ag0q
+1:eJxTTMoPSmViYGAQA2IQLeKY3XFO8rVjvkzxFBAtYyYwE0TPePNtEYh2ag0q
 uwSkZ+VXt4NoHplVHDeAtFuVKQ+I/nEiXxREz17TA6abVWIlQfTFb49kQbRQ
 xU01EF04j0ETRO9K9/AC0e9cuvxAdPoOuSIQzXzABUxPY+a69RVI73N8eg9E
 c7iKr9CUeu347FbaKhDtxsu3HkSHrardAKJDSt+qagPp1Vlp6iBabImm0Tcg
 fSjvmDmIXrPqk3CQ9GvHP2tvioPoT/quMiBaZE+wIohmk/ZsqQbSDRdEO0B0
-yHGRtjogzfO6rwNEews0OLwD0vtqVjuCaAAl34zH
+yHGRtjogzfO6rwNEews0OLwD0vtqVjuC6I6Vs/d8BdI2Ki/2gui4HgWZb0C6
+bZclmO6KvcfgKvPa8ZVvGSuIBgDocqOV
   "]]
 },
 WindowSize->{954, 1025},
@@ -178,7 +184,7 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[557, 20, 5754, 142, 825, "Input"]
+Cell[557, 20, 6020, 148, 869, "Input"]
 }
 ]
 *)

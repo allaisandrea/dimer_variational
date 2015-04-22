@@ -1,11 +1,14 @@
 #ifndef __running_stat_h__
 #define __running_stat_h__
 #include <stdexcept>
+#include <mpi.h>
 
-template<class type>
 class running_stat
 {
 public:
+	friend void MPI_Send(running_stat& x, int dest, int tag, MPI_Comm comm);
+	friend void MPI_Recv(running_stat& x, int source, int tag, MPI_Comm comm);
+	
 	running_stat(unsigned int nac = 0)
 	{
 		ac = 0x0;
@@ -34,9 +37,25 @@ public:
 			}
 		}
 	}
-	void operator()(const type& x)
+	running_stat & operator=(const running_stat &rs)
 	{
-		type dm;
+		unsigned int i;
+		reset(rs.nac);
+		c = rs.c;
+		m = rs.m;
+		s2 = rs.s2;
+		iac = rs.iac;
+		for(i = 0; i < nac; i++)
+		{
+			ac[i] = rs.ac[i];
+			dm_ac[i] = rs.dm_ac[i];
+			yac[i] = rs.yac[i];
+		}
+		return *this;
+	}
+	void operator()(const double& x)
+	{
+		double dm;
 		double dc, dc1;
 		
 		dc1 = c;
@@ -62,7 +81,7 @@ public:
 	}
 	void operator()(const running_stat& rs)
 	{
-		type dm;
+		double dm;
 		double dc1, dc2, dc12;
 		
 		dc1 = c;
@@ -76,25 +95,26 @@ public:
 		m += dm;
 		s2 += (rs.second_moment() - s2) / dc12 + dm * dm * dc1 / dc2;
 	}
+	
 	unsigned int count() const
 	{
 		return c;
 	}
-	type mean() const
+	double mean() const
 	{
 		return m;
 	}
-	type second_moment() const
+	double second_moment() const
 	{
 		return s2;
 	}
-	type variance() const
+	double variance() const
 	{
 		if(c < 2)
 			throw std::logic_error("Estimation of the variance requires at least two values.");
 		return s2 * c / (c - 1);
 	}
-	type variance_of_the_mean() const
+	double variance_of_the_mean() const
 	{
 		if(c < 2)
 			throw std::logic_error("Estimation of the variance requires at least two values.");
@@ -111,21 +131,85 @@ public:
 		return res;
 	}
 protected:
-	type * ac, *dm_ac, *yac;
+	double * ac, *dm_ac, *yac;
 	
 	unsigned int c, nac, iac;
-	type m, s2;
+	double m, s2;
 };
 
+inline void MPI_Send(running_stat& x, int dest, int tag, MPI_Comm comm)
+{
+	int err;
+	
+	err = MPI_Send(&x.nac, sizeof(x.nac), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Send(&x.c, sizeof(x.c), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+		
+	err = MPI_Send(&x.m, sizeof(x.m), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Send(&x.s2, sizeof(x.s2), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Send(&x.iac, sizeof(x.iac), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Send(x.ac, x.nac * sizeof(double), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Send(x.dm_ac, x.nac * sizeof(double), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+
+	err = MPI_Send(x.yac, x.nac * sizeof(double), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+}
+
+inline void MPI_Recv(running_stat& x, int source, int tag, MPI_Comm comm)
+{
+	int err;
+	unsigned int nac;
+	
+	err = MPI_Recv(&nac, sizeof(nac), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	x.reset(nac);
+	
+	err = MPI_Recv(&x.c, sizeof(x.c), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+		
+	err = MPI_Recv(&x.m, sizeof(x.m), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Recv(&x.s2, sizeof(x.s2), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Recv(&x.iac, sizeof(x.iac), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Recv(x.ac, x.nac * sizeof(double), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Recv(x.dm_ac, x.nac * sizeof(double), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+
+	err = MPI_Recv(x.yac, x.nac * sizeof(double), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+}
+	
 class gradient_running_stat
 {
 public:
+	friend void MPI_Send(gradient_running_stat& x, int dest, int tag, MPI_Comm comm);
+	friend void MPI_Recv(gradient_running_stat& x, int source, int tag, MPI_Comm comm);
 	gradient_running_stat(unsigned int nd = 0)
 	{
 		reset(nd);
 	};
 	void reset(unsigned int nd = 0)
 	{
+		gradient_running_stat::nd = nd;
 		n = 0;
 		F = 0.;
 		FF = 0.;
@@ -182,6 +266,27 @@ public:
 		E += dE;
 		
 	}
+	
+	void operator()(const gradient_running_stat &g)
+	{
+		if(g.nd != nd)
+			throw std::logic_error("Dimensions do not match");
+		F   = (n * F   + g.n * g.F  ) / (n + g.n);
+		FF  = (n * FF  + g.n * g.FF ) / (n + g.n);
+		Z   = (n * Z   + g.n * g.Z  ) / (n + g.n);
+		FZ  = (n * FZ  + g.n * g.FZ ) / (n + g.n);
+		FFZ = (n * FFZ + g.n * g.FFZ) / (n + g.n);
+		ZZ  = (n * ZZ  + g.n * g.ZZ ) / (n + g.n);
+		FZZ = (n * FZZ + g.n * g.FZZ) / (n + g.n);
+		E   = (n * E   + g.n * g.E  ) / (n + g.n);
+		n = n + g.n;
+	}
+	gradient_running_stat & operator=(const gradient_running_stat& g)
+	{
+		reset(g.nd);
+		operator()(g);
+		return *this;
+	}
 	unsigned int count()
 	{
 		return n;
@@ -196,9 +301,84 @@ public:
 		return E / n;
 	}
 protected:
-	unsigned int n;
+	unsigned int n, nd;
 	double F, FF;
 	arma::vec Z, FZ, FFZ;
 	arma::mat ZZ, FZZ, E;
 };
+
+inline void MPI_Send(gradient_running_stat& x, int dest, int tag, MPI_Comm comm)
+{
+	int err;
+	
+	err = MPI_Send(&x.nd, sizeof(x.nd), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Send(&x.n, sizeof(x.n), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Send(&x.F, sizeof(x.F), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Send(&x.FF, sizeof(x.FF), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Send(x.Z.memptr(), x.Z.n_elem * sizeof(double), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Send(x.FZ.memptr(), x.FZ.n_elem * sizeof(double), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Send(x.FFZ.memptr(), x.FFZ.n_elem * sizeof(double), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Send(x.ZZ.memptr(), x.ZZ.n_elem * sizeof(double), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Send(x.FZZ.memptr(), x.FZZ.n_elem * sizeof(double), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Send(x.E.memptr(), x.E.n_elem * sizeof(double), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+}
+
+
+inline void MPI_Recv(gradient_running_stat& x, int source, int tag, MPI_Comm comm)
+{
+	int err;
+	unsigned int nd;
+	
+	err = MPI_Recv(&nd, sizeof(nd), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	x.reset(nd);
+	
+	err = MPI_Recv(&x.n, sizeof(x.n), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Recv(&x.F, sizeof(x.F), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Recv(&x.FF, sizeof(x.FF), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Recv(x.Z.memptr(), x.Z.n_elem * sizeof(double), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Recv(x.FZ.memptr(), x.FZ.n_elem * sizeof(double), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Recv(x.FFZ.memptr(), x.FFZ.n_elem * sizeof(double), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Recv(x.ZZ.memptr(), x.ZZ.n_elem * sizeof(double), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Recv(x.FZZ.memptr(), x.FZZ.n_elem * sizeof(double), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+	
+	err = MPI_Recv(x.E.memptr(), x.E.n_elem * sizeof(double), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS) throw std::runtime_error("MPI_Send failed");
+}
+
 #endif

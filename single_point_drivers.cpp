@@ -9,7 +9,7 @@ void single_point_driver(interface_2 &p)
 	unsigned int n_observables, i;
 	data_structures<double> ds;
 	observables_vector_real observables;
-	std::vector< running_stat<double> > F;
+	std::vector< running_stat> F;
 	
 	std::cout << asctime(localtime(&start_time)) << std::endl;
 	

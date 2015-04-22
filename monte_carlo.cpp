@@ -331,32 +331,33 @@ unsigned int rotate_face_bf(
 template<class type>
 bool apriori_swap_proposal(unsigned int s, const data_structures<type> &ds, unsigned int &io, double &Zo2, unsigned int &ie, double &Ze2)
 {
-	unsigned int N;
+	unsigned int N, Nm;
 	double x;
 	const double* Epw, *Emw;
 	N = ds.Nf[s];
+	Nm = ds.Emw[s].n_elem;
 	Epw = ds.Epw[s].memptr();
 	Emw = ds.Emw[s].memptr();
 	
 	
 	x = ds.Zo[s] * rng::uniform();
 	io = 0;
-	while(x > 0)
+	while(x > 0 && io < N)
 	{
 		x -= Epw[io];
 		io++;
 	}
-	io--;
+	if(io > 0) io--;
 	
 	
 	x = ds.Ze[s] * rng::uniform();
 	ie = N;
-	while(x > 0)
+	while(x > 0 && ie < Nm)
 	{
 		x -= Emw[ie];
 		ie++;
 	}
-	ie--;
+	if(ie > 0) ie--;
 	
 	Zo2 = ds.Zo[s] - Epw[io] + Epw[ie];
 	Ze2 = ds.Ze[s] - Emw[ie] + Emw[io];

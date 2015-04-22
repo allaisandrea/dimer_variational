@@ -16,7 +16,7 @@ void monte_carlo_driver(
 	const std::vector< type (*)(const data_structures<type> &ds) > &observables,
 	const arma::vec &coefficients,
 	data_structures<type> &ds,
-	running_stat<double> &E,
+	running_stat &E,
 	gradient_running_stat &G);
 
 template <class type>
@@ -25,7 +25,7 @@ void monte_carlo_driver(
 	unsigned int n_skip,
 	const std::vector< type (*)(const data_structures<type> &ds) > &observables,
 	data_structures<type> &ds,
-	std::vector<running_stat<double> >& F);
+	std::vector<running_stat>& F);
 
 #endif
 

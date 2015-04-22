@@ -16,8 +16,10 @@ OBJECTS = main.o data_structures.o states.o monte_carlo.o \
 
 local: $(OBJECTS) $(OBJECTS1)
 	$(CXX) $(CXXFLAGS) $(OBJECTS) -o $(OUTPUT) $(LIBS)
-main.o: main.cpp test_minimization_gradient.cpp minimization_gradient.h
+main.o: main.cpp test_minimization_gradient.cpp minimization_gradient.h tests.cpp
 	$(CXX) $(CXXFLAGS) -c main.cpp -o main.o
+minimization_gradient_drivers.o:minimization_gradient_drivers.cpp minimization_gradient_drivers.h minimization_gradient.h
+	$(CXX) $(CXXFLAGS) -c minimization_gradient_drivers.cpp -o minimization_gradient_drivers.o
 cluster:$(OBJECTS)
 	$(CXX) $(CXXFLAGS) -L $(LIBDIR) $(OBJECTS) -o $(OUTPUT) $(LIBS)
 clean:

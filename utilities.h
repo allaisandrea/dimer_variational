@@ -4,6 +4,7 @@
 #include <sstream>
 #include <ctime>
 #include <iomanip>
+#include <mpi.h>
 
 template <class type>
 inline void swap(type &a, type &b)
@@ -82,5 +83,37 @@ inline std::string elapsed_time_string()
 {
 	return time_string(difftime(time(0x0), start_time));
 }
+
+inline void MPI_Send(arma::vec& x, int dest, int tag, MPI_Comm comm)
+{
+	int err;
+	arma::uword n_elem = x.n_elem;
+	err = MPI_Send(&n_elem, sizeof(n_elem), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS)
+		throw std::runtime_error("MPI_Send failed");
+	err = MPI_Send(x.memptr(), x.n_elem * sizeof(double), MPI_BYTE, dest, tag, comm);
+	if(err != MPI_SUCCESS)
+		throw std::runtime_error("MPI_Send failed");
+}
+
+inline void MPI_Send(const arma::vec& _x, int dest, int tag, MPI_Comm comm)
+{
+	arma::vec x(_x);
+	MPI_Send(x, dest, tag, comm);
+}
+
+inline void MPI_Recv(arma::vec& x, int source, int tag, MPI_Comm comm)
+{
+	int err;
+	arma::uword n_elem;
+	err = MPI_Recv(&n_elem, sizeof(n_elem), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS)
+		throw std::runtime_error("MPI_Recv failed");
+	x.set_size(n_elem);
+	err = MPI_Recv(x.memptr(), x.n_elem * sizeof(double), MPI_BYTE, source, tag, comm, MPI_STATUS_IGNORE);
+	if(err != MPI_SUCCESS)
+		throw std::runtime_error("MPI_Recv failed");
+}
+
 #endif
 

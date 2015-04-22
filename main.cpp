@@ -3,6 +3,7 @@
 #include <ctime>
 #include "rng.h"
 #include "test_minimization_gradient.cpp"
+#include "tests.cpp"
 #include "minimization_gradient_drivers.h"
 #include "single_point_drivers.h"
 #include "utilities.h"
@@ -61,7 +62,8 @@ int main(int argc, char** argv)
 // 		test_distribution_1();
 // 		test_gradient_stat_1();
 // 		test_running_stat();
-		test_minimization_gradient();
+// 		test_minimization_gradient();
+		test_build_graph();
 	}
 	return 0x0;
 }

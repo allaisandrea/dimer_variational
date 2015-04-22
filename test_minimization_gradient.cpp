@@ -5,7 +5,7 @@ struct parameters_t
 int i;
 };
 
-void f(const arma::vec& x, running_stat<double> & y, parameters_t &p)
+void f(const arma::vec& x, running_stat & y, parameters_t &p)
 {
 	unsigned int i;
 	double y0, s = 1e-2;
@@ -16,7 +16,7 @@ void f(const arma::vec& x, running_stat<double> & y, parameters_t &p)
 	}
 }
 
-void df(const arma::vec& x, running_stat<double> & y, arma::vec& g, parameters_t &p)
+void df(const arma::vec& x, running_stat & y, arma::vec& g, parameters_t &p)
 {
 	unsigned int i;
 	double y0, buf, s = 1e-2;
@@ -36,8 +36,8 @@ void test_minimization_gradient()
 {
 	parameters_t p;
 	arma::vec x;
-	running_stat<double> v;
+	running_stat v;
 	
 	x << 3.9 << 4.4;
-	conjugate_gradient<parameters_t>::minimize(x, v, 0.3, 0.4, f, df, p);
+// 	conjugate_gradient<parameters_t>::minimize(x, v, 0.3, 0.4, df, p);
 }

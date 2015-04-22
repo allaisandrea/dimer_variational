@@ -14,7 +14,7 @@ void monte_carlo_driver(
 	const std::vector< type (*)(const data_structures<type> &ds) > &observables,
 	const arma::vec &coefficients,
 	data_structures<type> &ds,
-	running_stat<double> &E,
+	running_stat &E,
 	gradient_running_stat &G)
 {
 	unsigned int i, ii, j, n_thermalize, di_print;
@@ -71,7 +71,7 @@ void monte_carlo_driver<double>(
 	const std::vector< double (*)(const data_structures<double> &ds) > &observables,
 	const arma::vec &coefficients,
 	data_structures<double> &ds,
-	running_stat <double> &E,
+	running_stat &E,
 	gradient_running_stat &G);
 
 
@@ -81,7 +81,7 @@ void monte_carlo_driver(
 	unsigned int n_skip,
 	const std::vector< type (*)(const data_structures<type> &ds) > &observables,
 	data_structures<type> &ds,
-	std::vector<running_stat<double> >& F)
+	std::vector<running_stat>& F)
 {
 	unsigned int i, ii, j, n_thermalize, di_print;
 	double dummy;
@@ -127,4 +127,4 @@ void monte_carlo_driver<double>(
 	unsigned int n_skip,
 	const std::vector< double (*)(const data_structures<double> &ds) > &observables,
 	data_structures<double> &ds,
-	std::vector< running_stat<double> > &F);
+	std::vector< running_stat> &F);

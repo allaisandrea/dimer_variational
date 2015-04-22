@@ -141,7 +141,7 @@ void homogeneous_state(
 	double t3, 
 	double t4,
 	double beta,
-	bool compute_derivatives,
+	unsigned int which_derivatives,
 	data_structures<type> &ds)
 {
 	const double pi = 3.141592653589793;
@@ -154,10 +154,10 @@ void homogeneous_state(
 	L = ds.L;
 	
 	U = plane_waves(L);
-	if(compute_derivatives)
-		nd = 6;
-	else
-		nd = 1;
+	
+	nd = 1;
+	for(i = 0; i < 5; i++)
+		if((which_derivatives >> i) & 1) nd ++;
 
 	w.set_size(2 * L * L, nd);
 	psi.zeros(2 * L * L, 2 * L * L, nd);
@@ -165,43 +165,63 @@ void homogeneous_state(
 	v.set_size(2, 2, nd);
 	wk.set_size(2, nd);
 	
-	h.set_size(2, 2, 6);
+	h.set_size(2, 2, nd);
 	
 	j = 0;
 	c = 0;
-	
 	for(q = 0; q <= L/2; q++)
 	for(k = 0; k <= L/2; k++)
 	{
 		kk = 2. * pi * k / L;
 		qq = 2. * pi * q / L;
 		
-		h(0, 0, 1) = + 0.5;
-		h(1, 1, 1) = - 0.5;
-		h(1, 0, 1) = 0.;
-		h(0, 1, 1) = 0.;
+		h(0, 0, 0) = + 0.5 * dmu - 2 * t1 * cos(qq) - 2 * t4 * cos(kk);
+		h(1, 1, 0) = - 0.5 * dmu - 2 * t1 * cos(kk) - 2 * t4 * cos(qq);
+		h(1, 0, 0) = - 4. * t2 * cos(0.5 * kk) * cos(0.5 * qq) 
+		             - 4. * t3 * (cos(0.5 * kk) * cos(1.5 * qq) + cos(0.5 * qq) * cos(1.5 * kk));
+		h(0, 1, 0) = h(1, 0, 0);
 		
-		h(0, 0, 2) = -2 * cos(qq);
-		h(1, 1, 2) = -2 * cos(kk);
-		h(1, 0, 2) = 0.;
-		h(0, 1, 2) = 0.;
-		
-		h(0, 0, 3) = 0.;
-		h(1, 1, 3) = 0.;
-		h(1, 0, 3) = -4 * cos(0.5 * kk) * cos(0.5 * qq);
-		h(0, 1, 3) = h(1, 0, 3);
-		
-		h(0, 0, 4) = 0.;
-		h(1, 1, 4) = 0.;
-		h(1, 0, 4) = - 4. * (cos(0.5 * kk) * cos(1.5 * qq) + cos(0.5 * qq) * cos(1.5 * kk));
-		h(0, 1, 4) = h(1, 0, 4);
-		
-		h(0, 0, 5) = -2 * cos(kk);
-		h(1, 1, 5) = -2 * cos(qq);
-		h(1, 0, 5) = 0.;
-		h(0, 1, 5) = 0.;
-		
-		h.slice(0) = dmu * h.slice(1) + t1 * h.slice(2) + t2 * h.slice(3) + t3 * h.slice(4) + t4 * h.slice(5);
+		d = 1;
+		if((which_derivatives >> 0) & 1)
+		{
+			h(0, 0, d) = + 0.5;
+			h(1, 1, d) = - 0.5;
+			h(1, 0, d) = 0.;
+			h(0, 1, d) = 0.;
+			d++;
+		}
+		if((which_derivatives >> 1) & 1)
+		{
+			h(0, 0, d) = -2 * cos(qq);
+			h(1, 1, d) = -2 * cos(kk);
+			h(1, 0, d) = 0.;
+			h(0, 1, d) = 0.;
+			d++;
+		}
+		if((which_derivatives >> 2) & 1)
+		{
+			h(0, 0, d) = 0.;
+			h(1, 1, d) = 0.;
+			h(1, 0, d) = -4 * cos(0.5 * kk) * cos(0.5 * qq);
+			h(0, 1, d) = h(1, 0, d);
+			d++;
+		}
+		if((which_derivatives >> 3) & 1)
+		{
+			h(0, 0, d) = 0.;
+			h(1, 1, d) = 0.;
+			h(1, 0, d) = - 4. * (cos(0.5 * kk) * cos(1.5 * qq) + cos(0.5 * qq) * cos(1.5 * kk));
+			h(0, 1, d) = h(1, 0, d);
+			d++;
+		}
+		if((which_derivatives >> 4) & 1)
+		{
+			h(0, 0, d) = -2 * cos(kk);
+			h(1, 1, d) = -2 * cos(qq);
+			h(1, 0, d) = 0.;
+			h(0, 1, d) = 0.;
+			d++;
+		}
 		
 		eig_sym(vbuf, v.slice(0), h.slice(0));
 		
@@ -273,11 +293,11 @@ void homogeneous_state(
 	ds.w[1] = ds.w[0] = w.col(0);
 	ds.phi.ones(2 * L * L);
 	
-	if(compute_derivatives)
+	if(nd > 1)
 	{
-		ds.Dpsi[1] = ds.Dpsi[0] = arma::conv_to<arma::Cube<type> >::from(psi.slices(1, 5));
-		ds.Dw[1] = ds.Dw[0] = w.cols(1, 5);
-		ds.Dphi.zeros(2 * L * L, 5);
+		ds.Dpsi[1] = ds.Dpsi[0] = arma::conv_to<arma::Cube<type> >::from(psi.slices(1, nd - 1));
+		ds.Dw[1] = ds.Dw[0] = w.cols(1, nd - 1);
+		ds.Dphi.zeros(2 * L * L, nd - 1);
 	}
 	ds.n_derivatives = nd - 1;
 }
@@ -291,7 +311,7 @@ void homogeneous_state<double>(
 	double t3, 
 	double t4, 
 	double beta,
-	bool compute_derivatives,
+	unsigned int which_derivatives,
 	data_structures<double> &ds);
 
 template
@@ -302,5 +322,5 @@ void homogeneous_state<arma::cx_double>(
 	double t3,
 	double t4, 
 	double beta,
-	bool compute_derivatives,
+	unsigned int which_derivatives,
 	data_structures<arma::cx_double> &ds);

@@ -104,7 +104,7 @@ type boson_hopping(const data_structures<type> &ds)
 			buf += bb_amplitude(edges(1), edges(2), edges(3), edges(0), ds);
 	}
 	
-	return buf / (double) ds.n_faces;
+	return - buf / (double) ds.n_faces;
 }
 
 
@@ -165,7 +165,7 @@ type fermion_hopping_1(const data_structures<type> &ds)
 		}
 	}
 	
-	return buf / (double) ds.n_faces;
+	return - buf / (double) ds.n_faces;
 }
 
 template<class type>
@@ -207,7 +207,7 @@ type fermion_hopping_2(const data_structures<type> &ds)
 			buf += bf_amplitude(edges(3), edges(0), p, s, edges(1), edges(2), ds);
 		}
 	}
-	return buf / (double) ds.n_faces;
+	return - buf / (double) ds.n_faces;
 }
 
 template<class type>
@@ -233,12 +233,12 @@ type fermion_hopping_3(const data_structures<type> &ds)
 		}
 		else if(mu == 1)
 		{
-			edges[0] =  ds.face_edges(0, f1);
-			edges[1] =  ds.face_edges(1, f1);
-			edges[2] =  ds.face_edges(1, f2);
-			edges[3] =  ds.face_edges(2, f2);
-			edges[4] =  ds.face_edges(3, f2);
-			edges[5] =  ds.face_edges(3, f1);
+			edges[0] =  ds.face_edges(1, f1);
+			edges[1] =  ds.face_edges(1, f2);
+			edges[2] =  ds.face_edges(2, f2);
+			edges[3] =  ds.face_edges(3, f2);
+			edges[4] =  ds.face_edges(3, f1);
+			edges[5] =  ds.face_edges(0, f1);
 		}
 		else
 			throw std::logic_error("This should not happen");
@@ -291,7 +291,7 @@ type fermion_hopping_3(const data_structures<type> &ds)
 		}
 	}
 	
-	return buf / (double) ds.n_faces;
+	return - buf / (double) ds.n_faces;
 }
 
 

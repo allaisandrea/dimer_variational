@@ -257,7 +257,7 @@ void test_gradient_stat_1()
 void test_running_stat()
 {
 	unsigned int i, j, n = 30, nac = 4;
-	running_stat<double> stat(nac);
+	running_stat stat(nac);
 	arma::vec x;
 	x.randn(n);
 	for(i = 0; i < n; i++)
@@ -269,4 +269,100 @@ void test_running_stat()
 	}
 	std::cout << stat.autocorrelation() << "\n";
 	
+}
+
+void test_homogeneous_state_derivatives()
+{
+	unsigned int i, j, s;
+	double eps = 1.e-7, beta = 1;
+	arma::vec tt;
+	arma::mat dt;
+	arma::mat psi[2], Dpsi[2], Dpsi_approx[2];
+	arma::vec Dw[2], Dw_approx[2], overlaps;
+	data_structures<double> ds;
+	
+	ds.L = 4;
+	
+	dt = arma::eye<arma::mat>(5, 5);
+	unsigned int which_derivatives = 0x1A;
+	arma::uvec cols;
+	cols << 1 << 3 << 4;
+	dt = dt.cols(cols);
+	for(i = 0; i < dt.n_cols; i++)
+	{
+		tt << 0. << 1. << 0.2 << 0.0 << 1.0;
+		
+		homogeneous_state(tt(0), tt(1), tt(2), tt(3), tt(4), beta, which_derivatives, ds);
+		for(s = 0; s < 2; s++)
+		{
+			psi[s] = ds.psi[s];
+			Dpsi[s] = ds.Dpsi[s].slice(i);
+			Dw[s] = ds.Dw[s].col(i);
+		}
+		
+		
+		tt += eps * dt.col(i);
+		homogeneous_state(tt(0), tt(1), tt(2), tt(3), tt(4), beta, which_derivatives, ds);
+		for(s = 0; s< 2; s++)
+		{
+			overlaps.set_size(ds.psi[s].n_cols);
+			for(j = 0; j < ds.psi[s].n_cols; j++)
+			{
+				overlaps(j) = dot(psi[s].col(j), ds.psi[s].col(j));
+				if(fabs(fabs(overlaps(j)) - 1.) > 1.e-7)
+					std::cout << "overlap 1: " << std::setw(5) << overlaps(j) << std::setw(5) << fabs(overlaps(j)) - 1. << "\n";
+				overlaps(j) /= fabs(overlaps(j));
+			}
+			Dpsi_approx[s] = ds.psi[s] * arma::diagmat(overlaps);
+			Dw_approx[s] = ds.w[s];
+		}
+		
+		
+		tt -= 2. * eps * dt.col(i);
+		homogeneous_state(tt(0), tt(1), tt(2), tt(3), tt(4), beta, which_derivatives, ds);
+		for(s = 0; s< 2; s++)
+		{
+			overlaps.set_size(ds.psi[s].n_cols);
+			for(j = 0; j < ds.psi[s].n_cols; j++)
+			{
+				overlaps(j) = dot(psi[s].col(j), ds.psi[s].col(j));
+				if(fabs(fabs(overlaps(j)) - 1.) > 1.e-7)
+					std::cout << "overlap 1: " << std::setw(5) << overlaps(j) << std::setw(5) << fabs(overlaps(j)) - 1. << "\n";
+				overlaps(j) /= fabs(overlaps(j));
+			}
+			Dpsi_approx[s] -= ds.psi[s] * arma::diagmat(overlaps);
+			Dw_approx[s] -= ds.w[s];
+		}
+		
+		tt += eps * dt.col(i);
+		
+		Dpsi_approx[0] /= 2 * eps;
+		Dpsi_approx[1] /= 2 * eps;
+		Dw_approx[0] /= 2 * eps;
+		Dw_approx[1] /= 2 * eps;
+		
+		std::cout << norm(Dw[0] - Dw_approx[0], "fro") << "\n";
+		std::cout << norm(Dw[1] - Dw_approx[1], "fro") << "\n";
+		std::cout << norm(Dpsi_approx[0] - Dpsi[0], "fro") << "\n";
+		std::cout << norm(Dpsi_approx[1] - Dpsi[1], "fro") << "\n";
+		
+// 		for(j = 0; j < Dpsi[0].n_cols; j++)
+// 		{
+// 			std::cout << norm(Dpsi_approx[0].col(j) - Dpsi[0].col(j), "fro") << "\n";
+// 			std::cout << join_rows(Dpsi_approx[0].col(j), Dpsi[0].col(j)) <<  "\n";
+// 		}
+		
+		std::cout << "\n";
+	}
+}
+
+
+void test_build_graph()
+{
+	unsigned int L = 4;
+	data_structures<double> ds;
+	ds.L = L;
+	build_graph(ds);
+	std::cout << ds.face_edges << "\n";
+	std::cout << ds.adjacent_faces << "\n";
 }
