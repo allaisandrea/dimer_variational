@@ -1,368 +1,95 @@
-#include "monte_carlo.h"
-#include "utilities.h"
 #include "states.h"
-#include "running_stat.h"
-#include <set>
 
-void test_distribution()
+unsigned int basis_functions(unsigned int L, unsigned int k, unsigned int q, arma::mat& psi);
+arma::mat homogeneous_state_hamiltonian(
+	unsigned int L,
+	double dmu, 
+	double t1, 
+	double t2, 
+	double t3, 
+	double t4);
+
+arma::mat homogeneous_state_hamiltonian(unsigned int L, const arma::vec & u);
+
+void kspace_hamiltonian(const arma::vec &u, unsigned int L, unsigned int ik, unsigned int iq, arma::mat& h, arma::cube& dh);
+
+void test_basis_functions()
 {
-	unsigned int i, j, io, ie, n_measure = 100000, n_skip = 500, s;
-	double Zo, Ze, beta = 5., amp;
-	arma::uvec count;
-	data_structures<double> ds;
-	start_time = time(0x0);
-	std::cout << asctime(localtime(&start_time)) << std::endl;
+	unsigned int L = 6, L_2 = L / 2, k, q, i;
+	arma::mat psi, H, h;
+	arma::cube dh;
+	arma::vec u;
 	
-	ds.L = 16;
-	ds.Nf[0] = 11;
-	ds.Nf[1] = 11;
+	u.randn(6);
+	H = homogeneous_state_hamiltonian(L, u);
 	
-	build_graph(ds);
-
-	rng::seed(1);
-
-	homogeneous_state(0., 1., 0., 0., -0.9, beta, false, ds);
-	initial_configuration(ds);
-	
-	rng::seed(1);
-	s = 0;
-	count.zeros(2 * ds.L * ds.L);
-	for(i = 0; i < n_measure; i++)
+	i = 0;
+	for(q = 0; q <= L_2; q++)
+	for(k = 0; k < L; k++)
 	{
-		for(j = 0; j < n_skip; j++)
-		{
-			monte_carlo_step(true, true, amp, ds);
-		}
+		kspace_hamiltonian(u, L, k, q, h, dh);
 		
-		for(j = 0; j < ds.Nf[0]; j++)
-			count(ds.J[0](j))++;
+		basis_functions(L, k, q, psi);
+		
+		std::cout << std::fixed << std::setprecision(5) << std::setw(10);
+		
+		(trans(psi) * psi).raw_print();
+		std::cout << "\n"; 
+		
+		std::cout << std::setw(10);
+		(trans(psi) * H * psi).raw_print();
+		std::cout << "\n";
+		
+		std::cout << std::setw(10);
+		h.raw_print();
+		std::cout << "================\n";
 	}
-	count.save("count1.bin");
+	
+	
+}
+
+void test_homogeneous_state()
+{
+	unsigned int L = 8, L_2 = L / 2, k, q, nf, i;
+	double beta = 10, eps = 1.e-7;
+	data_structures<double> ds;
+	arma::vec x, w1, w2, Dw, u0;
+	arma::mat H, P, Dpsi, psi1, psi2;
+	
+	ds.L = L;
+	build_graph(ds);
+	
+	P.randn(6, 4);
+	x.randn(4);
+	u0.zeros(6);
+	
+	for(i = 0; i < x.n_rows; i++)
+	{
+	
+		x(i) += eps;
+		homogeneous_state(x, P, u0, beta, ds);
+		psi1 = ds.psi[0];
+		w1 = ds.w[0];
+		
+		x(i) -= 2 * eps;
+		homogeneous_state(x, P, u0, beta, ds);
+		psi2 = ds.psi[0];
+		w2 = ds.w[0];
+		
+		Dpsi = (psi1 - psi2) / eps / 2;
+		Dw = (w1 - w2) / eps / 2;
+		
+		x(i) += eps;
+		homogeneous_state(x, P, u0, beta, ds);
+		
+// 		std::cout << join_rows(ds.Dw[0].col(i),  Dw) << "\n";
+		std::cout << norm(ds.Dw[0].col(i) - Dw, "fro")  << "\n";
+		std::cout << norm(ds.Dpsi[0].slice(i) - Dpsi, "fro")  << "\n\n";
+	}
+	
+	H = homogeneous_state_hamiltonian(L, P * x);
+	ds.psi[0].save("U.bin");
+	H.save("H.bin");
 	ds.w[0].save("w.bin");
 }
 
-
-struct classcomp{
-	bool operator()(const arma::uvec &a, const arma::uvec &b)const
-	{
-		unsigned int i, n;
-		n = a.n_elem;
-		for(i = 0; i < n; i++)
-		{
-			if(a(i) > b(i))
-				return false;
-			if(a(i) < b(i))
-				return true;
-		}
-		return false;
-	}
-};
-
-struct my_pair
-{
-	my_pair(){count = 0; value = 0.;}
-	unsigned int count;
-	double value;
-};
-
-void test_map()
-{
-	unsigned int i;
-	arma::uvec a;
-	std::map<arma::uvec, int, classcomp> map;
-	std::map<arma::uvec, int, classcomp>::iterator it;
-	
-	for(i = 0; i < 1000; i++)
-	{
-		a = rng::uniform_integer(5, 3);
-		map[a] = 1;
-	}
-	for(it = map.begin(); it != map.end(); it++)
-	{
-		std::cout << trans(it->first) << "\n";
-	}
-}
-
-template<class type>
-double phi_amplitude(data_structures<type> ds)
-{
-	unsigned int i;
-	type Phi = 1;
-	for(i = 0; i < ds.particles.n_elem; i++)
-	{
-		if(ds.particles(i) == 1)
-			Phi *= ds.phi(i);
-	}
-	return abs_squared(Phi);
-}
-
-template<class type>
-double energy(data_structures<type> &ds)
-{
-	double E;
-	unsigned int i, s;
-	E = 0;
-	for(s = 0; s < 2; s++)
-	for(i = 0; i < ds.Nf[s]; i++)
-		E += ds.w[s](ds.J[s](i));
-	return E;
-}
-
-void test_distribution_1()
-{
-	unsigned int L = 4, Nu = 0, Nd = 1, c, i, n_measure = 1000000000, n_skip = 1000, which_case, iprint;
-	double dmu = 0.5, t1 = 1., t2 = 0.3, t3 = 0.1, t4 = 0.05, beta = 1;
-	double amp0, amp1, amp2, E0;
-	arma::mat Mi[2], X, p;
-	arma::vec w;
-	data_structures<double> ds;
-	arma::uvec buf;
-	std::map<arma::uvec, my_pair, classcomp> map;
-	std::map<arma::uvec, my_pair, classcomp>::iterator it;
-	my_pair *pair;
-
-	ds.L = L;
-	build_graph(ds);
-	homogeneous_state(dmu, t1, t2, t3, t4, beta, true, ds);
-	
-	ds.Nf[0] = Nu;
-	ds.Nf[1] = Nd;
-	initial_configuration(ds);
-	
-	
-	Mi[0] = ds.Mi[0];
-	Mi[1] = ds.Mi[1];
-	
-	E0 = energy(ds);
-	iprint = n_measure / 100;
-	if(iprint == 0) iprint = 1;
-	iprint = 5000;
-	for(c = 0; c < n_measure; c++)
-	{
-		amp0 = phi_amplitude(ds) * abs_squared(arma::det(Mi[0] * ds.M[0]) * arma::det(Mi[1] * ds.M[1]));
-		which_case = monte_carlo_step(true, true, amp2, ds);
-		amp1 = phi_amplitude(ds) * abs_squared(arma::det(Mi[0] * ds.M[0]) * arma::det(Mi[1] * ds.M[1]));
-		if(which_case != 0 && fabs(amp1/amp0/amp2 - 1.) > 1.e-7)
-		{
-			std::cout << std::setw(4) <<  which_case << std::setw(12) << amp1 / amp0 / amp2 - 1;
-// 			test_Mi(ds);
-		}
-		if(which_case == 0 && fabs(amp1/amp0 - 1.) > 1.e-7)
-			std::cout << "err: amp\n";
-		
-		if(c > 10000)
-		{
-			amp1 *= exp(E0-energy(ds));
-			buf = ds.J[1].rows(0, ds.Nf[1] - 1);
-			pair = &map[join_cols(ds.particles, buf)];
-			if(pair->value != 0. && fabs(pair->value - amp1) > 1.e-7)
-				std::cout << "err:map\n";
-			pair->value = amp1;
-			pair->count ++;
-		}
-		if((c + 1) % iprint == 0)
-		{
-			std::cout << "\r" << std::setw(5) << 100 * (c + 1) / n_measure << " %";
-			std::cout.flush();
-			p.set_size(2, map.size());
-			
-			i = 0;
-			for(it = map.begin(); it != map.end(); it++)
-			{
-				p(0, i) = (*it).second.value;
-				p(1, i) = (*it).second.count;
-				i++;
-			}
-			p.save("tally.bin");
-		}
-		
-	}
-	std::cout << "\n";
-	
-}
-
-// double chop(double x)
-// {
-// 	return 1.e-10 * round(1.e10 * x);
-// }
-// void test_gradient_stat()
-// {
-// 	unsigned int n = 10, nd = 3, i, j;
-// 	gradient_running_stat stat(nd);
-// 	arma::vec F;
-// 	arma::mat Z;
-// 	F.randn(n);
-// 	Z.randn(n, nd);
-// 	for(i = 0; i < n; i++)
-// 	{
-// 		stat(F(i), trans(Z.row(i)));
-// 	}
-// 	
-// 	std::cout << chop(stat.F - mean(F)) << "\n";
-// 	for(i = 0; i < nd; i++)
-// 		std::cout << chop(stat.Z(i) - mean(Z.col(i))) << "\n";
-// 	
-// 	std::cout << chop(stat.FF - accu((F - stat.F) % (F - stat.F)) / n) << "\n";
-// 	for(i = 0; i < nd; i++)
-// 		std::cout << chop(stat.FZ(i) - accu((F - stat.F) % (Z.col(i) - stat.Z(i))) / n) << "\n";
-// 	for(i = 0; i < nd; i++)
-// 	for(j = 0; j < nd; j++)
-// 		std::cout << chop(stat.ZZ(i, j) - accu((Z.col(i) - stat.Z(i)) % (Z.col(j) - stat.Z(j))) / n) << "\n";
-// 	
-// 	for(i = 0; i < nd; i++)
-// 		std::cout << chop(stat.FFZ(i) - accu((F - stat.F) % (F - stat.F) % (Z.col(i) - stat.Z(i))) / n) << "\n";
-// 	
-// 	for(i = 0; i < nd; i++)
-// 	for(j = 0; j < nd; j++)
-// 		std::cout << chop(stat.FZZ(i, j) - accu((F - stat.F) % (Z.col(i) - stat.Z(i)) % (Z.col(j) - stat.Z(j))) / n) << "\n";
-// 	
-// 	for(i = 0; i < nd; i++)
-// 	for(j = 0; j < nd; j++)
-// 		std::cout << chop(stat.E(i, j) - accu(((F - stat.F) % (Z.col(i) - stat.Z(i)) - stat.FZ(i)) % ((F - stat.F) % (Z.col(j) - stat.Z(j)) - stat.FZ(j))) / n) << "\n";
-// 	
-// }
-
-
-void test_gradient_stat_1()
-{
-	unsigned int n = 20, i, j, n1 = 1000;
-	double F;
-	arma::vec x(4), Z(3);
-	gradient_running_stat stat(3), stat1(3), stat2(3);
-	
-	stat1.reset(3);
-	
-	for(j = 0; j < n1 ; j++)
-	{
-		stat.reset(3);
-		for(i = 0; i< n; i++)
-		{
-			x = rng::gaussian(4);
-			F = x(0) + 2 * x(1) * x(3) - x(0) * x(3) * x(3);
-			Z(0) = x(1) * x(2) * x(3) + 2 * x(0) * x(3) - x(1);
-			Z(1) = x(0) * x(3) * x(3) + 2 * x(1) * x(3) - x(2);
-			Z(2) = x(1) * x(2) * x(1) + 2 * x(0) * x(2) - x(3);
-			stat(F, Z);
-			stat1(F, Z);
-		}
-		stat2(1., stat.gradient());
-	}
-	
-	std::cout << stat1.gradient() << "\n";
-	std::cout << n1 * stat1.gradient_covariance() << "\n";
-// 	std::cout << stat2.ZZ * n / (n - 1) << "\n";
-	
-}
-
-void test_running_stat()
-{
-	unsigned int i, j, n = 30, nac = 4;
-	running_stat stat(nac);
-	arma::vec x;
-	x.randn(n);
-	for(i = 0; i < n; i++)
-		stat(x(i));
-	
-	for(i = 0; i < nac; i++)
-	{
-		std::cout << cov(x.rows(0, n - i - 1), x.rows(i, n - 1)) << "\n";
-	}
-	std::cout << stat.autocorrelation() << "\n";
-	
-}
-
-void test_homogeneous_state_derivatives()
-{
-	unsigned int i, j, s;
-	double eps = 1.e-7, beta = 1;
-	arma::vec tt;
-	arma::mat dt;
-	arma::mat psi[2], Dpsi[2], Dpsi_approx[2];
-	arma::vec Dw[2], Dw_approx[2], overlaps;
-	data_structures<double> ds;
-	
-	ds.L = 4;
-	
-	dt = arma::eye<arma::mat>(5, 5);
-	unsigned int which_derivatives = 0x1A;
-	arma::uvec cols;
-	cols << 1 << 3 << 4;
-	dt = dt.cols(cols);
-	for(i = 0; i < dt.n_cols; i++)
-	{
-		tt << 0. << 1. << 0.2 << 0.0 << 1.0;
-		
-		homogeneous_state(tt(0), tt(1), tt(2), tt(3), tt(4), beta, which_derivatives, ds);
-		for(s = 0; s < 2; s++)
-		{
-			psi[s] = ds.psi[s];
-			Dpsi[s] = ds.Dpsi[s].slice(i);
-			Dw[s] = ds.Dw[s].col(i);
-		}
-		
-		
-		tt += eps * dt.col(i);
-		homogeneous_state(tt(0), tt(1), tt(2), tt(3), tt(4), beta, which_derivatives, ds);
-		for(s = 0; s< 2; s++)
-		{
-			overlaps.set_size(ds.psi[s].n_cols);
-			for(j = 0; j < ds.psi[s].n_cols; j++)
-			{
-				overlaps(j) = dot(psi[s].col(j), ds.psi[s].col(j));
-				if(fabs(fabs(overlaps(j)) - 1.) > 1.e-7)
-					std::cout << "overlap 1: " << std::setw(5) << overlaps(j) << std::setw(5) << fabs(overlaps(j)) - 1. << "\n";
-				overlaps(j) /= fabs(overlaps(j));
-			}
-			Dpsi_approx[s] = ds.psi[s] * arma::diagmat(overlaps);
-			Dw_approx[s] = ds.w[s];
-		}
-		
-		
-		tt -= 2. * eps * dt.col(i);
-		homogeneous_state(tt(0), tt(1), tt(2), tt(3), tt(4), beta, which_derivatives, ds);
-		for(s = 0; s< 2; s++)
-		{
-			overlaps.set_size(ds.psi[s].n_cols);
-			for(j = 0; j < ds.psi[s].n_cols; j++)
-			{
-				overlaps(j) = dot(psi[s].col(j), ds.psi[s].col(j));
-				if(fabs(fabs(overlaps(j)) - 1.) > 1.e-7)
-					std::cout << "overlap 1: " << std::setw(5) << overlaps(j) << std::setw(5) << fabs(overlaps(j)) - 1. << "\n";
-				overlaps(j) /= fabs(overlaps(j));
-			}
-			Dpsi_approx[s] -= ds.psi[s] * arma::diagmat(overlaps);
-			Dw_approx[s] -= ds.w[s];
-		}
-		
-		tt += eps * dt.col(i);
-		
-		Dpsi_approx[0] /= 2 * eps;
-		Dpsi_approx[1] /= 2 * eps;
-		Dw_approx[0] /= 2 * eps;
-		Dw_approx[1] /= 2 * eps;
-		
-		std::cout << norm(Dw[0] - Dw_approx[0], "fro") << "\n";
-		std::cout << norm(Dw[1] - Dw_approx[1], "fro") << "\n";
-		std::cout << norm(Dpsi_approx[0] - Dpsi[0], "fro") << "\n";
-		std::cout << norm(Dpsi_approx[1] - Dpsi[1], "fro") << "\n";
-		
-// 		for(j = 0; j < Dpsi[0].n_cols; j++)
-// 		{
-// 			std::cout << norm(Dpsi_approx[0].col(j) - Dpsi[0].col(j), "fro") << "\n";
-// 			std::cout << join_rows(Dpsi_approx[0].col(j), Dpsi[0].col(j)) <<  "\n";
-// 		}
-		
-		std::cout << "\n";
-	}
-}
-
-
-void test_build_graph()
-{
-	unsigned int L = 4;
-	data_structures<double> ds;
-	ds.L = L;
-	build_graph(ds);
-	std::cout << ds.face_edges << "\n";
-	std::cout << ds.adjacent_faces << "\n";
-}

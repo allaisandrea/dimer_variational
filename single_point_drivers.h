@@ -5,4 +5,6 @@
 
 void single_point_driver(interface_2 &p);
 
+void qp_residual_driver(interface_3 &p);
+
 #endif

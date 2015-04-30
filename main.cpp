@@ -38,11 +38,16 @@ int main(int argc, char** argv)
 			p2.read(argv[1]);
 			single_point_driver(p2);
 		}
+		else if(p0.version == 3)
+		{
+			interface_3 p3;
+			p3.read(argv[1]);
+			qp_residual_driver(p3);
+		}
 	}
 	else
 	{
 // 		test_build_graph();
-// 		test_homogeneous_state(); 
 // 		test_rotate_face_no_step();
 // 		test_singular();
 // 		test_rotate_face_with_step();
@@ -63,7 +68,9 @@ int main(int argc, char** argv)
 // 		test_gradient_stat_1();
 // 		test_running_stat();
 // 		test_minimization_gradient();
-		test_build_graph();
+// 		test_build_graph();
+// 		test_basis_functions();
+		test_homogeneous_state(); 
 	}
 	return 0x0;
 }

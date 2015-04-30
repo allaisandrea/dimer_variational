@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       157,          7]
-NotebookDataLength[      6816,        183]
-NotebookOptionsPosition[      6581,        170]
-NotebookOutlinePosition[      6916,        185]
-CellTagsIndexPosition[      6873,        182]
+NotebookDataLength[     10619,        271]
+NotebookOptionsPosition[     10384,        258]
+NotebookOutlinePosition[     10718,        273]
+CellTagsIndexPosition[     10675,        270]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -60,6 +60,10 @@ Cell[BoxData[{
          "\"\<Vector\>\""}], "}"}], ",", "\[IndentingNewLine]", 
        RowBox[{"{", 
         RowBox[{
+        "\"\<vspace\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
         "\"\<coefficients\>\"", ",", "\"\<Real64\>\"", ",", 
          "\"\<Vector\>\""}], "}"}], ",", "\[IndentingNewLine]", 
        RowBox[{"{", 
@@ -73,6 +77,10 @@ Cell[BoxData[{
        RowBox[{"{", 
         RowBox[{
         "\"\<max_count\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<max_it\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
          "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
        RowBox[{"{", 
         RowBox[{"\"\<x0\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Vector\>\""}], 
@@ -123,20 +131,23 @@ Cell[BoxData[{
         "\"\<observables\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
          "\"\<Vector\>\""}], "}"}], ",", "\[IndentingNewLine]", 
        RowBox[{"{", 
-        RowBox[{"\"\<dmu\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}],
+        RowBox[{"\"\<u0\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], 
+        "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<u1x\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}],
          "}"}], ",", "\[IndentingNewLine]", 
        RowBox[{"{", 
-        RowBox[{"\"\<t1\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], 
+        RowBox[{"\"\<u1y\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}],
+         "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<u2\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], 
         "}"}], ",", "\[IndentingNewLine]", 
        RowBox[{"{", 
-        RowBox[{"\"\<t2\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], 
-        "}"}], ",", "\[IndentingNewLine]", 
+        RowBox[{"\"\<u3x\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}],
+         "}"}], ",", "\[IndentingNewLine]", 
        RowBox[{"{", 
-        RowBox[{"\"\<t3\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], 
-        "}"}], ",", "\[IndentingNewLine]", 
-       RowBox[{"{", 
-        RowBox[{"\"\<t4\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], 
-        "}"}], ",", "\[IndentingNewLine]", 
+        RowBox[{"\"\<u3y\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}],
+         "}"}], ",", "\[IndentingNewLine]", 
        RowBox[{"{", 
         RowBox[{
         "\"\<beta\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], 
@@ -151,24 +162,101 @@ Cell[BoxData[{
         RowBox[{"\"\<F\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Matrix\>\""}], 
         "}"}]}], "}"}]}], "\[IndentingNewLine]", "}"}]}], 
   ";"}], "\[IndentingNewLine]", 
+ RowBox[{
+  RowBox[{"items3", "=", 
+   RowBox[{"{", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<L\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<Nu\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<Nd\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<seed\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<n_measure\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<n_skip\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Scalar\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<u0\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], 
+        "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<u1x\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}],
+         "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<u1y\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}],
+         "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<u2\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], 
+        "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<u3x\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}],
+         "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<u3y\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}],
+         "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<beta\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Scalar\>\""}], 
+        "}"}]}], "\[IndentingNewLine]", "}"}], ",", "\[IndentingNewLine]", 
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{"\"\<zo\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Matrix\>\""}], 
+        "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<szo\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Matrix\>\""}],
+         "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<ze\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Matrix\>\""}], 
+        "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{"\"\<sze\>\"", ",", "\"\<Real64\>\"", ",", "\"\<Matrix\>\""}],
+         "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<J\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Vector\>\""}], "}"}], ",", "\[IndentingNewLine]", 
+       RowBox[{"{", 
+        RowBox[{
+        "\"\<k\>\"", ",", "\"\<UnsignedInteger32\>\"", ",", 
+         "\"\<Matrix\>\""}], "}"}]}], "\[IndentingNewLine]", "}"}]}], 
+    "\[IndentingNewLine]", "}"}]}], ";"}], "\[IndentingNewLine]", 
  RowBox[{"CreateInterfaces", "[", 
   RowBox[{"\"\<Interface\>\"", ",", 
    RowBox[{"{", 
-    RowBox[{"items1", ",", "items2"}], "}"}]}], 
+    RowBox[{"items1", ",", "items2", ",", "items3"}], "}"}]}], 
   "]"}], "\[IndentingNewLine]", 
  RowBox[{"Clear", "[", 
   RowBox[{"items1", ",", " ", "items2"}], "]"}]}], "Input",
  CellChangeTimes->CompressedData["
-1:eJxTTMoPSmViYGAQA2IQLeKY3XFO8rVjvkzxFBAtYyYwE0TPePNtEYh2ag0q
-uwSkZ+VXt4NoHplVHDeAtFuVKQ+I/nEiXxREz17TA6abVWIlQfTFb49kQbRQ
-xU01EF04j0ETRO9K9/AC0e9cuvxAdPoOuSIQzXzABUxPY+a69RVI73N8eg9E
-c7iKr9CUeu347FbaKhDtxsu3HkSHrardAKJDSt+qagPp1Vlp6iBabImm0Tcg
-fSjvmDmIXrPqk3CQ9GvHP2tvioPoT/quMiBaZE+wIohmk/ZsqQbSDRdEO0B0
-yHGRtjogzfO6rwNEews0OLwD0vtqVjuC6I6Vs/d8BdI2Ki/2gui4HgWZb0C6
-bZclmO6KvcfgKvPa8ZVvGSuIBgDocqOV
+1:eJwdxUsow3EAB/B/nkujxWZm/2HyWg5KHikHf5mMSLNQmoMyItaGJUPKa1hy
+QLbVihwYy9ykkRxGWV7lMclBkfxxUBtF8fvu8OkjbdEqW0MoipIQmM90mk5F
+LKOle+YxXcCz4KW3wAouHVcaLslWrXESc2kH55ZcPpDPxd/HWgG2bZqDj6ap
+Rfgi8CjBsf2+DKyzUzK821ZRiT/Kpmtw206SHocelAVfDI2685P3macHzJEL
+12SJLPN8p3Hg8uiYLVzvGHJhVd97ejZ5o0OTieNXZbkB8mG3pxBvOj7jlGKW
++XX6hPgzR05jvrtOiiPEijEjeeRcYMKqI/7EMJnLzppwFW+k5IO8P7jBYNO6
+ze0nF6e97OFmcwodIE/sFgWfVj9QcpplXqsN4bje3KSrJctcjb3Yeea1dJH1
+7IwVz2WvbykkLFPrmd3GCWF5JwZycqzgFEdO2a9ww0HqPf5bbvcukP0awzUW
+38x/4Tlf1g/+Bwbv2bc=
   "]]
 },
-WindowSize->{954, 1025},
+WindowSize->{954, 745},
 WindowMargins->{{Automatic, 0}, {Automatic, 0}},
 FrontEndVersion->"9.0 for Linux x86 (64-bit) (February 7, 2013)",
 StyleDefinitions->"Default.nb"
@@ -184,7 +272,7 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[557, 20, 6020, 148, 869, "Input"]
+Cell[557, 20, 9823, 236, 1441, "Input"]
 }
 ]
 *)

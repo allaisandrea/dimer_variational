@@ -2,6 +2,7 @@
 #include "linear_algebra.h"
 #include "utilities.h"
 
+const double pi = 3.1415926535897932385;
 
 template<class type>
 void partition_function_gradient(const data_structures<type> &ds, arma::Col<type> &G)
@@ -47,6 +48,13 @@ void partition_function_gradient(const data_structures<type> &ds, arma::Col<type
 	}
 	
 }
+
+template
+void partition_function_gradient<double>(const data_structures<double> &ds, arma::Col<double> &G);
+
+template
+void partition_function_gradient<arma::cx_double>(const data_structures<arma::cx_double> &ds, arma::Col<arma::cx_double> &G);
+
 
 template<class type>
 type bb_amplitude(
@@ -107,6 +115,11 @@ type boson_hopping(const data_structures<type> &ds)
 	return - buf / (double) ds.n_faces;
 }
 
+template
+double boson_hopping<double>(const data_structures<double> &ds);
+
+template
+arma::cx_double boson_hopping<arma::cx_double>(const data_structures<arma::cx_double> &ds);
 
 template<class type>
 type boson_potential(const data_structures<type> &ds)
@@ -128,6 +141,11 @@ type boson_potential(const data_structures<type> &ds)
 	return buf / (double) ds.n_faces;
 }
 
+template
+double boson_potential<double>(const data_structures<double> &ds);
+
+template
+arma::cx_double boson_potential<arma::cx_double>(const data_structures<arma::cx_double> &ds);
 
 template<class type>
 type fermion_hopping_1(const data_structures<type> &ds)
@@ -167,6 +185,12 @@ type fermion_hopping_1(const data_structures<type> &ds)
 	
 	return - buf / (double) ds.n_faces;
 }
+
+template
+double fermion_hopping_1<double>(const data_structures<double> &ds);
+
+template
+arma::cx_double fermion_hopping_1<arma::cx_double>(const data_structures<arma::cx_double> &ds);
 
 template<class type>
 type fermion_hopping_2(const data_structures<type> &ds)
@@ -209,6 +233,12 @@ type fermion_hopping_2(const data_structures<type> &ds)
 	}
 	return - buf / (double) ds.n_faces;
 }
+
+template
+double fermion_hopping_2<double>(const data_structures<double> &ds);
+
+template
+arma::cx_double fermion_hopping_2<arma::cx_double>(const data_structures<arma::cx_double> &ds);
 
 template<class type>
 type fermion_hopping_3(const data_structures<type> &ds)
@@ -294,40 +324,70 @@ type fermion_hopping_3(const data_structures<type> &ds)
 	return - buf / (double) ds.n_faces;
 }
 
-
-template
-void partition_function_gradient<double>(const data_structures<double> &ds, arma::Col<double> &G);
-
-template
-void partition_function_gradient<arma::cx_double>(const data_structures<arma::cx_double> &ds, arma::Col<arma::cx_double> &G);
-
-template
-double boson_hopping<double>(const data_structures<double> &ds);
-
-template
-arma::cx_double boson_hopping<arma::cx_double>(const data_structures<arma::cx_double> &ds);
-
-template
-double boson_potential<double>(const data_structures<double> &ds);
-
-template
-arma::cx_double boson_potential<arma::cx_double>(const data_structures<arma::cx_double> &ds);
-
-template
-double fermion_hopping_1<double>(const data_structures<double> &ds);
-
-template
-arma::cx_double fermion_hopping_1<arma::cx_double>(const data_structures<arma::cx_double> &ds);
-
-template
-double fermion_hopping_2<double>(const data_structures<double> &ds);
-
-template
-arma::cx_double fermion_hopping_2<arma::cx_double>(const data_structures<arma::cx_double> &ds);
-
 template
 double fermion_hopping_3<double>(const data_structures<double> &ds);
 
 template
 arma::cx_double fermion_hopping_3<arma::cx_double>(const data_structures<arma::cx_double> &ds);
+
+
+void quasiparticle_residual(const data_structures<double> &ds, arma::mat &zo, arma::mat &ze)
+{
+	unsigned int edge, p, j, J;
+	double amp, kdx;
+	
+	arma::uvec buf;
+	arma::colvec U;
+	arma::rowvec V;
+	
+	zo.zeros(5, ds.Nf[0]);
+	for(p = 0; p < ds.Nf[0]; p++)
+	for(j = 0; j < ds.Nf[0]; j++)
+	{
+		J = ds.J[0](j);
+		edge = ds.fermion_edge[0](p);
+		
+		amp = ds.Mi[0](j, p);
+		zo(0, j) += amp * amp;
+		
+		kdx = 2. * pi / ds.L * (ds.coords(0, edge) * ds.momenta(0, J) + ds.coords(1, edge) * ds.momenta(1, J));
+		if(edge % 2 == 0)
+		{
+			kdx += pi / ds.L * ds.momenta(0, J);
+			zo(1, j) += cos(kdx) * amp;
+			zo(2, j) += sin(kdx) * amp;
+		}
+		else
+		{
+			kdx += pi / ds.L * ds.momenta(1, J);
+			zo(3, j) += cos(kdx) * amp;
+			zo(4, j) += sin(kdx) * amp;
+		}
+	}
+	zo /= ds.Nf[0];
+// 	std::cout << amp << "\n";
+// 	ze.zeros(ds.n_edges, ds.n_edges);
+	
+// 	for(edge = 0; edge < ds.n_edges; edge++)
+// 	{
+// 		if(ds.is_boson(ds.particles(edge)))
+// 		{
+// 			for(j = ds.Nf[0]; j < ds.n_edges; j++)
+// 			{
+// 				J = ds.J[0](j);
+// 				buf << J;
+// 				U = ds.psi[0](ds.fermion_edge[0], buf);
+// 				buf << edge;
+// 				V = ds.psi[0](buf, ds.J[0].rows(0, ds.Nf[0] - 1));
+// 				ze(edge, J) = ds.psi[0](edge, J) + dot(V, ds.Mi[0] * U);
+// 			}
+// 		}
+// 	}
+}
+
+
+
+
+
+
 

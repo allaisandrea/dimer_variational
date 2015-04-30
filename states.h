@@ -2,23 +2,12 @@
 #define __states_h__
 
 #include "data_structures.h"
-template<class type>
-void homogeneous_state(
-	double dmu, 
-	double t1, 
-	double t2, 
-	double t3, 
-	double t4, 
-	double beta,
-	unsigned int which_derivatives,
-	data_structures<type> &ds);
 
-arma::mat homogeneous_state_hamiltonian(
-	unsigned int L,
-	double dmu, 
-	double t1, 
-	double t2, 
-	double t3, 
-	double t4);
-arma::mat plane_waves(unsigned int L);
+void homogeneous_state(
+	const arma::vec &x,
+	const arma::mat &P,
+	const arma::vec &u0,
+	double beta,
+	data_structures<double> &ds);
+
 #endif

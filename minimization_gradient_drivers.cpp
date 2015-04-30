@@ -15,6 +15,9 @@ void min_df_internal(const arma::vec& x, running_stat & y, gradient_running_stat
 	unsigned int i, n_observables;
 	data_structures<double> ds;
 	observables_vector_real observables;
+	arma::mat P;
+	arma::vec u0;
+	
 	ds.L = p.L;
 	ds.Nf[0] = p.Nu;
 	ds.Nf[1] = p.Nd;  
@@ -38,8 +41,29 @@ void min_df_internal(const arma::vec& x, running_stat & y, gradient_running_stat
 	}
 	
 	n_observables = observables.size();
-	
-	homogeneous_state(0., x(0), 1., x(1), x(2), p.beta, 0x1A, ds);
+	if(p.vspace == 1)
+	{
+		u0.zeros(6);
+		u0(3) = 1.;
+		P.zeros(6, 2);
+		P(1, 0) = P(2, 0) = 1.;
+		P(4, 1) = P(5, 1) = 1.;
+		homogeneous_state(x, P, u0, p.beta, ds);
+	}
+	else if(p.vspace == 2)
+	{
+		u0.zeros(6);
+		u0(3) = 1.;
+		P.zeros(6, 5);
+		P(0, 0) = 1.;
+		P(1, 1) = 1.;
+		P(2, 2) = 1.;
+		P(4, 3) = 1.;
+		P(5, 4) = 1.;
+		homogeneous_state(x, P, u0, p.beta, ds);
+	}
+	else
+		throw std::logic_error("Unknown variational space");
 	
 	monte_carlo_driver(p.n_measure, p.n_skip, true, observables, p.coefficients, ds, y, g);
 }
@@ -100,7 +124,7 @@ void driver_minimize(interface_1 &p)
 			MPI_Send(&seed, 1, MPI_UNSIGNED, i, 1, MPI_COMM_WORLD);
 		}
 		
-		conjugate_gradient<interface_1>::minimize(p.x0, v, p.step, p.max_count, min_df, p);
+		conjugate_gradient<interface_1>::minimize(p.x0, v, p.step, p.max_count, p.max_it, min_df, p);
 		
 		for(i = 1; i < n_threads; i++)
 		{

@@ -11,11 +11,15 @@ struct data_structures
 	unsigned int Nf[2];
 	unsigned int n_faces;
 	unsigned int n_derivatives;
+	unsigned int n_edges;
 	
 	arma::umat face_edges;
 	arma::umat adjacent_faces;
 	arma::uvec particles;
 	arma::uvec fermion_edge[2];
+	
+	arma::umat coords;
+	arma::umat momenta;
 	
 	arma::Mat<type> psi[2];
 	arma::Cube<type> Dpsi[2];
@@ -28,6 +32,7 @@ struct data_structures
 	arma::mat Epw[2];
 	arma::vec Emw[2];
 	double Zo[2], Ze[2];
+	
 	
 	arma::uvec J[2];
 	arma::Mat<type> M[2];  
@@ -58,5 +63,7 @@ struct data_structures
 
 template<class type>
 void build_graph(data_structures<type> &ds);
+
+void translate_edges(unsigned int e0, unsigned int L, arma::uvec &edges);
 #endif
 

@@ -22,4 +22,6 @@ type fermion_hopping_2(const data_structures<type> &ds);
 
 template<class type>
 type fermion_hopping_3(const data_structures<type> &ds);
+
+void quasiparticle_residual(const data_structures<double> &ds, arma::mat &zo, arma::mat &ze);
 #endif

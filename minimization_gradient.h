@@ -5,6 +5,7 @@
 #include <vector>
 #include "running_stat.h"
 #include "utilities.h"
+#include "rng.h"
 
 template <class parameters_t>
 class conjugate_gradient
@@ -16,11 +17,12 @@ public:
 		arma::vec &x,
 		running_stat  &v,
 		double step,
-		unsigned int max_count, 
+		unsigned int max_count,
+		unsigned int max_it,
 		df_pointer df,
 		parameters_t & param)
 	{
-		unsigned int i, j, max_it = 15;
+		unsigned int i, j;
 		gradient_running_stat gstat;
 		
 		param.points.zeros(x.n_rows, max_it);
@@ -84,7 +86,7 @@ protected:
 		std::cout << elapsed_time_string() << " Bracketing\n";
 		std::cout.flush();
 		
-		r1 = step;
+		r1 = step * (0.5 + rng::uniform());
 		v[i1].reset();
 		g[i1].reset(x.n_rows);
 		icomp = compare(x - r1 * G, v[i1], g[i1], x - r0 * G, v[i0], g[i0], max_count, df, param);
@@ -105,9 +107,9 @@ protected:
 				v[i2].reset();
 				g[i2].reset(x.n_rows);
 				icomp = compare(x - r2 * G, v[i2], g[i2], x - r1 * G, v[i1], g[i1], max_count, df, param);
-				std::cout << elapsed_time_string() << std::setw(8) <<  r0 << " " << v[i0].mean() << "\n";
-				std::cout << elapsed_time_string() << std::setw(8) <<  r1 << " " << v[i1].mean() << "\n";
-				std::cout << elapsed_time_string() << std::setw(8) <<  r2 << " " << v[i2].mean() << "\n" << std::endl;
+				std::cout << elapsed_time_string() << std::setw(15) <<  r0 << " " << std::setw(15) << v[i0].mean() << "\n";
+				std::cout << elapsed_time_string() << std::setw(15) <<  r1 << " " << std::setw(15) << v[i1].mean() << "\n";
+				std::cout << elapsed_time_string() << std::setw(15) <<  r2 << " " << std::setw(15) << v[i2].mean() << "\n" << std::endl;
 				std::cout.flush();
 				swap(i1, i2);
 				swap(r1, r2);
@@ -131,18 +133,18 @@ protected:
 				v[i2].reset();
 				g[i2].reset(x.n_rows);
 				icomp = compare(x - r2 * G, v[i2], g[i2], x - r0 * G, v[i0], g[i0], max_count, df, param);
-				std::cout << elapsed_time_string() << std::setw(8) << r0 << " " << v[i0].mean() << "\n";
-				std::cout << elapsed_time_string() << std::setw(8) << r1 << " " << v[i1].mean() << "\n";
-				std::cout << elapsed_time_string() << std::setw(8) << r2 << " " << v[i2].mean() << "\n" << std::endl;
+				std::cout << elapsed_time_string() << std::setw(15) << r0 << " " << std::setw(15) << v[i0].mean() << "\n";
+				std::cout << elapsed_time_string() << std::setw(15) << r1 << " " << std::setw(15) << v[i1].mean() << "\n";
+				std::cout << elapsed_time_string() << std::setw(15) << r2 << " " << std::setw(15) << v[i2].mean() << "\n" << std::endl;
 			}while(icomp > 0);
 			swap(i1, i2);
 			swap(r1, r2);
 		}
 		
 		std::cout << elapsed_time_string() << " Bracketed\n";
-		std::cout << elapsed_time_string() << std::setw(8) <<  r0 << " " << v[i0].mean() << "\n";
-		std::cout << elapsed_time_string() << std::setw(8) <<  r1 << " " << v[i1].mean() << "\n";
-		std::cout << elapsed_time_string() << std::setw(8) <<  r2 << " " << v[i2].mean() << "\n" << std::endl;
+		std::cout << elapsed_time_string() << std::setw(15) << r0 << " " << std::setw(15) << v[i0].mean() << "\n";
+		std::cout << elapsed_time_string() << std::setw(15) << r1 << " " << std::setw(15) << v[i1].mean() << "\n";
+		std::cout << elapsed_time_string() << std::setw(15) << r2 << " " << std::setw(15) << v[i2].mean() << "\n" << std::endl;
 		
 		while(icomp != 0)
 		{
@@ -156,7 +158,7 @@ protected:
 			v[3].reset();
 			g[3].reset(x.n_rows);
 			icomp = compare(x - r3 * G, v[3], g[3], x - r1 * G, v[i1], g[i1], max_count, df, param);
-			std::cout << elapsed_time_string() << std::setw(8) <<  r3 << " " << v[3].mean() << "\n" << std::endl;
+			std::cout << elapsed_time_string() << std::setw(15) << r3 << " " << std::setw(15) << v[3].mean() << "\n";
 			if(icomp <= 0)
 			{
 				swap(i0, i1);
@@ -172,9 +174,9 @@ protected:
 				g[i2] = g[3];
 			}
 			
-			std::cout << elapsed_time_string() << std::setw(8) <<  r0 << " " << v[i0].mean() << "\n";
-			std::cout << elapsed_time_string() << std::setw(8) <<  r1 << " " << v[i1].mean() << "\n";
-			std::cout << elapsed_time_string() << std::setw(8) <<  r2 << " " << v[i2].mean() << "\n" << std::endl;
+			std::cout << elapsed_time_string() << std::setw(15) << r0 << " " << std::setw(15) << v[i0].mean() << "\n";
+			std::cout << elapsed_time_string() << std::setw(15) << r1 << " " << std::setw(15) << v[i1].mean() << "\n";
+			std::cout << elapsed_time_string() << std::setw(15) << r2 << " " << std::setw(15) << v[i2].mean() << "\n" << std::endl;
 		}
 		
 		x -= r1 * G;
@@ -203,7 +205,7 @@ protected:
 		
 		re = (v1.mean() - v2.mean()) / sqrt(v1.variance() / v1.count() + v2.variance() / v2.count());
 		bre = (v1.mean() - v2.mean()) / sqrt(v1.variance() / max_count + v2.variance() / max_count);
-		std::cout << elapsed_time_string() << " \trelative diff: " << " " <<  re << " @ " << v1.count() << ", " << v2.count()<< std::endl;
+		std::cout << elapsed_time_string() << " \trelative diff: " << " " << std::setw(15) <<  re << " @ " << std::setw(8) << v1.count() << ", " << std::setw(8) << v2.count()<< std::endl;
 		
 		while(fabs(re) < 4. && (v1.count() < max_count || v2.count() < max_count))
 		{
@@ -214,7 +216,7 @@ protected:
 			
 			re = (v1.mean() - v2.mean()) / sqrt(v1.variance() / v1.count() + v2.variance() / v2.count());
 			bre = (v1.mean() - v2.mean()) / sqrt(v1.variance() / max_count + v2.variance() / max_count);
-			std::cout << elapsed_time_string() << " \trelative diff: " << " " <<  re << " @ " << v1.count() << ", " << v2.count()<< std::endl;
+			std::cout << elapsed_time_string() << " \trelative diff: " << " " << std::setw(15) <<  re << " @ "<< std::setw(8) << v1.count() << ", " << std::setw(8) << v2.count()<< std::endl;
 		}
 		
 		if(fabs(re) < 4)
